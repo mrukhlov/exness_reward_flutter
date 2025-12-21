@@ -28,7 +28,39 @@ flutter pub get
 static const String baseUrl = 'http://34.42.207.250:8000';
 ```
 
-3. Run the app:
+3. **Configure Google Maps API Key (Required for iOS):**
+   
+   ⚠️ **Security Best Practice**: Never commit API keys to version control!
+   
+   a. Get a Google Maps API key:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/google/maps-apis)
+   - Create a new project or select an existing one
+   - Enable "Maps SDK for iOS"
+   - Create credentials (API Key)
+   - **IMPORTANT**: Restrict the key to your iOS bundle ID (e.g., `com.exness.rewardFlutter`)
+   - Set usage quotas to prevent abuse
+   
+   b. Add the API key securely:
+   
+   **Recommended (Most Secure):**
+   ```bash
+   # Copy the example file
+   cp ios/Runner/Secrets.swift.example ios/Runner/Secrets.swift
+   
+   # Edit Secrets.swift and add your actual API key
+   # This file is gitignored and won't be committed
+   ```
+   
+   **Alternative (Less Secure):**
+   - Add to `ios/Runner/Info.plist` (can be extracted from IPA)
+   - Or use environment variable: `GOOGLE_MAPS_API_KEY`
+   
+   **Why Secrets.swift?**
+   - It's gitignored (won't be committed to version control)
+   - More secure than Info.plist (which is bundled in the app)
+   - Still extractable from IPA, but API key restrictions protect you
+
+4. Run the app:
 ```bash
 flutter run
 ```

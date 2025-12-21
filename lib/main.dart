@@ -95,7 +95,13 @@ GoRouter _createRouter(BuildContext context) {
             path: '/discover',
             builder: (context, state) => const VenueListScreen(),
           ),
-          GoRoute(path: '/map', builder: (context, state) => const MapScreen()),
+          GoRoute(
+            path: '/map',
+            builder: (context, state) {
+              final venueId = state.uri.queryParameters['venueId'];
+              return MapScreen(selectedVenueId: venueId);
+            },
+          ),
           GoRoute(
             path: '/events',
             builder: (context, state) => const EventsScreen(),
@@ -159,27 +165,56 @@ class MainTabScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDark;
+    final currentIndex = _getCurrentIndex(context);
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _getCurrentIndex(context),
-        onTap: (index) => _onTabTapped(context, index),
-        backgroundColor: isDark ? Colors.black : Colors.white,
-        selectedItemColor: const Color(0xFFFFD00B),
-        unselectedItemColor: const Color(0xFF9CA3AF),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+      bottomNavigationBar: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: isDark ? Colors.black : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E7EB),
+              width: 1,
+            ),
+          ),
         ),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'DISCOVER'),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'MAP'),
-          BottomNavigationBarItem(icon: Icon(Icons.event), label: 'EVENTS'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'PROFILE'),
-        ],
+        padding: const EdgeInsets.only(top: 8, bottom: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _BottomNavItem(
+              icon: Icons.explore,
+              label: 'DISCOVER',
+              isSelected: currentIndex == 0,
+              isDark: isDark,
+              onTap: () => context.go('/discover'),
+            ),
+            _BottomNavItem(
+              icon: Icons.map,
+              label: 'MAP',
+              isSelected: currentIndex == 1,
+              isDark: isDark,
+              onTap: () => context.go('/map'),
+            ),
+            _BottomNavItem(
+              icon: Icons.event,
+              label: 'EVENTS',
+              isSelected: currentIndex == 2,
+              isDark: isDark,
+              onTap: () => context.go('/events'),
+            ),
+            _BottomNavItem(
+              icon: Icons.person,
+              label: 'PROFILE',
+              isSelected: currentIndex == 3,
+              isDark: isDark,
+              onTap: () => context.go('/profile'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -192,21 +227,54 @@ class MainTabScaffold extends StatelessWidget {
     if (location == '/profile') return 3;
     return 0;
   }
+}
 
-  void _onTabTapped(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/discover');
-        break;
-      case 1:
-        context.go('/map');
-        break;
-      case 2:
-        context.go('/events');
-        break;
-      case 3:
-        context.go('/profile');
-        break;
-    }
+class _BottomNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _BottomNavItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected
+        ? (isDark ? const Color(0xFFFFD00B) : Colors.black)
+        : const Color(0xFF9CA3AF);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 26,
+              color: color,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: color,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -132,3 +132,13 @@ yarn.lock
 
 .claude/
 logs/
+
+# Secrets and API keys (NEVER commit these!)
+**/ios/Runner/Secrets.swift
+**/android/app/google-services.json
+**/android/app/google-services.json.bak
+*.keystore
+*.jks
+.env
+.env.local
+.env.*.local

@@ -58,10 +58,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
               const SizedBox(height: 48),
               // Header Logo
               Row(
@@ -282,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 40),
               // Sign Up Link
               Padding(
                 padding: const EdgeInsets.only(bottom: 40),
@@ -312,7 +313,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

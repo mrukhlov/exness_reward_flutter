@@ -30,6 +30,11 @@ class _VenueListScreenState extends State<VenueListScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
     _fetchData();
   }
 
@@ -66,9 +71,11 @@ class _VenueListScreenState extends State<VenueListScreen> {
       // Flatten grouped venues
       final allVenues = <Venue>[];
       for (final group in groupedVenues) {
-        final venues = group['venues'] as List;
-        for (final venueJson in venues) {
-          allVenues.add(Venue.fromJson(venueJson as Map<String, dynamic>));
+        final venuesList = group['venues'] as List<dynamic>?;
+        if (venuesList != null) {
+          for (final venueJson in venuesList) {
+            allVenues.add(Venue.fromJson(venueJson as Map<String, dynamic>));
+          }
         }
       }
 
@@ -154,163 +161,270 @@ class _VenueListScreenState extends State<VenueListScreen> {
                         color: _sortByDistance
                             ? Colors.black
                             : Colors.grey.shade400,
+                        size: 24,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'Participating Venues',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.white : Colors.black,
+                  const Spacer(),
+                  Text(
+                    'Participating Venues',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => context.go('/map'),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.map,
+                        color: Color(0xFFFFD00B),
+                        size: 24,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  setState(() => _searchQuery = value);
-                  _fetchData();
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search venues...',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.1)
-                          : Colors.grey.shade200,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.1)
-                          : Colors.grey.shade200,
-                    ),
-                  ),
-                ),
-                style: TextStyle(color: isDark ? Colors.white : Colors.black),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Categories
-            SizedBox(
-              height: 40,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  final isActive = _activeCategory == category;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            getCategoryIcon(category),
-                            size: 16,
-                            color: isActive
-                                ? Colors.black
-                                : Colors.grey.shade600,
+            // Search & Filters Section
+            Container(
+              color: isDark ? Colors.black : const Color(0xFFF9FAFB),
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                children: [
+                  // Search Bar
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF252525) : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.transparent
+                              : Colors.grey.shade200,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (_) => _fetchData(),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                          fontSize: 16,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search venues or cuisines...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 16,
                           ),
-                          const SizedBox(width: 6),
-                          Text(category),
-                        ],
-                      ),
-                      selected: isActive,
-                      onSelected: (selected) {
-                        setState(() => _activeCategory = category);
-                      },
-                      backgroundColor: isDark
-                          ? const Color(0xFF1E1E1E)
-                          : Colors.white,
-                      selectedColor: const Color(0xFFFFD00B),
-                      labelStyle: TextStyle(
-                        color: isActive ? Colors.black : Colors.grey.shade600,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.grey.shade400,
+                            size: 24,
+                          ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.close,
+                                    color: Colors.grey.shade600,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _fetchData();
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
                       ),
                     ),
-                  );
-                },
+                  ),
+                  // Category Chips
+                  SizedBox(
+                    height: 36,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _categories.length,
+                      itemBuilder: (context, index) {
+                        final category = _categories[index];
+                        final isActive = _activeCategory == category;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() => _activeCategory = category);
+                            },
+                            child: Container(
+                              height: 36,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? const Color(0xFFFFD00B)
+                                    : (isDark
+                                        ? const Color(0xFF252525)
+                                        : Colors.white),
+                                borderRadius: BorderRadius.circular(18),
+                                border: isActive
+                                    ? null
+                                    : Border.all(
+                                        color: isDark
+                                            ? Colors.white.withOpacity(0.1)
+                                            : Colors.grey.shade200,
+                                      ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    getCategoryIcon(category),
+                                    size: 18,
+                                    color: isActive
+                                        ? Colors.black
+                                        : Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    category,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isActive
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: isActive
+                                          ? Colors.black
+                                          : (isDark
+                                              ? Colors.grey.shade300
+                                              : Colors.grey.shade600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
             // Venues List
             Expanded(
               child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFFFD00B),
-                      ),
-                    )
-                  : _error != null
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.red,
+                          const CircularProgressIndicator(
+                            color: Color(0xFFFFD00B),
                           ),
                           const SizedBox(height: 16),
-                          Text(_error!),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _fetchData,
-                            child: const Text('Retry'),
+                          Text(
+                            'Loading venues...',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                            ),
                           ),
                         ],
                       ),
                     )
-                  : _filteredVenues.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No venues found',
-                        style: TextStyle(
-                          color: isDark
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _filteredVenues.length,
-                      itemBuilder: (context, index) {
-                        final venue = _filteredVenues[index];
-                        final distance =
-                            locationProvider.latitude != null &&
-                                locationProvider.longitude != null
-                            ? calculateDistance(
-                                locationProvider.latitude!,
-                                locationProvider.longitude!,
-                                venue.lat,
-                                venue.lng,
-                              )
-                            : venue.distance;
+                  : _error != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _error!,
+                                  style: const TextStyle(color: Colors.red),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _error = null;
+                                      _isLoading = true;
+                                    });
+                                    _fetchData();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFD00B),
+                                    foregroundColor: Colors.black,
+                                  ),
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : _filteredVenues.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.search_off,
+                                    size: 48,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No venues found',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _filteredVenues.length,
+                              itemBuilder: (context, index) {
+                                final venue = _filteredVenues[index];
+                                final distance =
+                                    locationProvider.latitude != null &&
+                                            locationProvider.longitude != null
+                                        ? calculateDistance(
+                                            locationProvider.latitude!,
+                                            locationProvider.longitude!,
+                                            venue.lat,
+                                            venue.lng,
+                                          )
+                                        : venue.distance;
 
-                        return _VenueCard(venue: venue, distance: distance);
-                      },
-                    ),
+                                return _VenueCard(
+                                  venue: venue,
+                                  distance: distance,
+                                );
+                              },
+                            ),
             ),
           ],
         ),
@@ -329,13 +443,21 @@ class _VenueCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      child: InkWell(
-        onTap: () => context.go('/venue/${venue.id}'),
-        borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: () => context.push('/venue/${venue.id}'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF1A1A1A)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.grey.shade100,
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -346,20 +468,26 @@ class _VenueCard extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  CachedNetworkImage(
-                    imageUrl: venue.image,
-                    height: 192,
+                  SizedBox(
                     width: double.infinity,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: 192,
-                      color: Colors.grey.shade200,
-                      child: const Center(child: CircularProgressIndicator()),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 192,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.error),
+                    height: 192,
+                    child: CachedNetworkImage(
+                      imageUrl: venue.image,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        height: 192,
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFFFD00B),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: 192,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.image, size: 64),
+                      ),
                     ),
                   ),
                   if (venue.isPartner)
@@ -369,11 +497,18 @@ class _VenueCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 4,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFD00B),
                           borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: const Text(
                           'PARTNER',
@@ -381,6 +516,7 @@ class _VenueCard extends StatelessWidget {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
@@ -394,6 +530,7 @@ class _VenueCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Discount and Distance
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -403,20 +540,22 @@ class _VenueCard extends StatelessWidget {
                           color: Color(0xFFFFD00B),
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.near_me,
                             size: 14,
-                            color: Colors.grey,
+                            color: Colors.grey.shade500,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             distance,
                             style: TextStyle(
                               fontSize: 12,
+                              fontWeight: FontWeight.w500,
                               color: Colors.grey.shade500,
                             ),
                           ),
@@ -424,7 +563,8 @@ class _VenueCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
+                  // Venue Name
                   Text(
                     venue.name,
                     style: TextStyle(
@@ -434,11 +574,25 @@ class _VenueCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  // Type • Price Level • Category
                   Text(
                     '${venue.type} • ${venue.priceLevel} • ${venue.category}',
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w300,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                    ),
                   ),
                   const SizedBox(height: 16),
+                  // Divider
+                  Divider(
+                    height: 1,
+                    color: isDark
+                        ? Colors.white.withOpacity(0.1)
+                        : Colors.grey.shade100,
+                  ),
+                  const SizedBox(height: 12),
+                  // Rating and View Details
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -451,7 +605,7 @@ class _VenueCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            venue.rating.toString(),
+                            venue.rating.toStringAsFixed(1),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -473,15 +627,18 @@ class _VenueCard extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
+                        child: Text(
                           'VIEW DETAILS',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey,
+                            color: isDark ? Colors.white : Colors.grey.shade700,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),

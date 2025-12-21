@@ -14,6 +14,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _showQR = false;
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -25,416 +27,621 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final qrCodeUrl =
         'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${user?.id ?? 'EXNESS_REWARDS_MEMBER'}';
 
-    return Scaffold(
-      backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Profile',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.normal,
-                      color: isDark ? Colors.white : Colors.black,
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.black : Colors.white).withOpacity(
+                      0.9,
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      'Edit',
-                      style: TextStyle(color: Color(0xFFFFD00B), fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    // ID Card
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF121212) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : Colors.grey.shade200,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Profile',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.normal,
+                          letterSpacing: 0.5,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
+                      // TextButton(
+                      //   onPressed: () {},
+                      //   child: const Text(
+                      //     'Edit',
+                      //     style: TextStyle(
+                      //       color: Color(0xFFFFD00B),
+                      //       fontSize: 18,
+                      //       fontWeight: FontWeight.w500,
+                      //     ),
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+                // Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: 100,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        // ID Card
+                        Stack(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF121212)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.1)
+                                      : Colors.grey.shade200,
+                                ),
+                              ),
+                              child: Column(
                                 children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFD00B),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.token,
-                                      size: 20,
-                                      color: Colors.black,
-                                    ),
+                                  // Header Row
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 32,
+                                            height: 32,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFD00B),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.token,
+                                              size: 20,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'EXNESS ID',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              letterSpacing: 2,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(
+                                                  0xFF1E1E1E,
+                                                ).withOpacity(0.3)
+                                              : Colors.grey.shade100,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          border: Border.all(
+                                            color: isDark
+                                                ? Colors.white.withOpacity(0.1)
+                                                : Colors.grey.shade200,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Active',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: isDark
+                                                ? Colors.white.withOpacity(0.9)
+                                                : Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'EXNESS ID',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 2,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
+                                  const SizedBox(height: 24),
+                                  // User Info Row
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: const Color(
+                                              0xFFFFD00B,
+                                            ).withOpacity(0.5),
+                                            width: 2,
+                                          ),
+                                          color: isDark
+                                              ? Colors.black
+                                              : Colors.white,
+                                        ),
+                                        padding: const EdgeInsets.all(2),
+                                        child: ClipOval(
+                                          child: CachedNetworkImage(
+                                            imageUrl:
+                                                user?.avatar ??
+                                                'https://lh3.googleusercontent.com/aida-public/AB6AXuCiX2QKBp1JE2AKkHOvbNL5xAJBZy1TgviF6HSFfkm2AWSjjkeZYWTJ8-gtyphUCVIZ9A59f8S-N3x5CIzj9XvlDrf6IzP9pMBhXFPVck9dRrONIS-gOzrpoTwxuvFnqZXWkbYP1s0GHd4LmAE24tOYM_8N-ZMXi88KgURl_q0mq2yNw9kFr1DT4UIGNxcjLCCR8mvZR_EG8eBlLrlmL_CadT8ye3eSPnRBS5YG5754KsT9pCiWWakXjPb79ZSSY40jHHzrL83v_Q',
+                                            fit: BoxFit.cover,
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    Container(
+                                                      color:
+                                                          Colors.grey.shade200,
+                                                      child: const Icon(
+                                                        Icons.person,
+                                                        size: 40,
+                                                      ),
+                                                    ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 20),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              user?.name ?? 'Guest User',
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.normal,
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              user?.role ?? 'Member',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                color: Color(0xFFFFD00B),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'ID: ${user?.id ?? '---'}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontFamily: 'monospace',
+                                                letterSpacing: 1,
+                                                color: Colors.grey.shade500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  // Divider
+                                  Divider(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.1)
+                                        : Colors.grey.shade100,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  // Footer Row
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'EXPIRES',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w500,
+                                              letterSpacing: 2,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '12/2025',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      GestureDetector(
+                                        onTap: () =>
+                                            setState(() => _showQR = true),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey.shade100,
+                                            ),
+                                          ),
+                                          child: CachedNetworkImage(
+                                            imageUrl: qrCodeUrl,
+                                            width: 40,
+                                            height: 40,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
+                            ),
+                            // Decorative blur circles
+                            Positioned(
+                              top: -80,
+                              right: -80,
+                              child: Container(
+                                width: 256,
+                                height: 256,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Active',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFFFD00B,
+                                  ).withOpacity(0.1),
                                   shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color(
-                                      0xFFFFD00B,
-                                    ).withOpacity(0.5),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: ClipOval(
-                                  child: CachedNetworkImage(
-                                    imageUrl:
-                                        user?.avatar ??
-                                        'https://lh3.googleusercontent.com/aida-public/AB6AXuCiX2QKBp1JE2AKkHOvbNL5xAJBZy1TgviF6HSFfkm2AWSjjkeZYWTJ8-gtyphUCVIZ9A59f8S-N3x5CIzj9XvlDrf6IzP9pMBhXFPVck9dRrONIS-gOzrpoTwxuvFnqZXWkbYP1s0GHd4LmAE24tOYM_8N-ZMXi88KgURl_q0mq2yNw9kFr1DT4UIGNxcjLCCR8mvZR_EG8eBlLrlmL_CadT8ye3eSPnRBS5YG5754KsT9pCiWWakXjPb79ZSSY40jHHzrL83v_Q',
-                                    fit: BoxFit.cover,
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.person),
-                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 20),
-                              Expanded(
+                            ),
+                            Positioned(
+                              bottom: -80,
+                              left: -80,
+                              child: Container(
+                                width: 256,
+                                height: 256,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFFFD00B,
+                                  ).withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        // Stats
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF121212)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.05)
+                                        : Colors.grey.shade200,
+                                  ),
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: const Color(
+                                          0xFFFFD00B,
+                                        ).withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.bookmark,
+                                        size: 20,
+                                        color: Color(0xFFFFD00B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
                                     Text(
-                                      user?.name ?? 'Guest User',
+                                      'SAVED VENUES',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 1,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${favoritesProvider.favorites.length}',
                                       style: TextStyle(
                                         fontSize: 20,
-                                        fontWeight: FontWeight.normal,
+                                        fontWeight: FontWeight.w500,
                                         color: isDark
                                             ? Colors.white
                                             : Colors.black,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      user?.role ?? 'Member',
-                                      style: const TextStyle(
-                                        color: Color(0xFFFFD00B),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'ID: ${user?.id ?? '---'}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade500,
-                                        fontFamily: 'monospace',
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        // Activity Section
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(
+                            'My Activity',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.normal,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
                           ),
-                          const SizedBox(height: 20),
-                          const Divider(),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF121212)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.05)
+                                  : Colors.grey.shade200,
+                            ),
+                          ),
+                          child: _MenuItem(
+                            icon: Icons.favorite,
+                            title: 'Saved Places',
+                            subtitle: 'View your favorite spots',
+                            onTap: () => context.go('/saved-places'),
+                            isLast: true,
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        // App Settings
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(
+                            'App Settings',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.normal,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF121212)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.05)
+                                  : Colors.grey.shade200,
+                            ),
+                          ),
+                          child: Column(
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'EXPIRES',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      letterSpacing: 2,
-                                      color: Colors.grey.shade500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '12/2025',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                ],
-                              ),
                               GestureDetector(
-                                onTap: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => _QRCodeDialog(
-                                      qrCodeUrl: qrCodeUrl,
-                                      user: user,
-                                    ),
-                                  );
-                                },
+                                onTap: () => themeProvider.toggleTheme(),
                                 child: Container(
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.grey.shade100,
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: isDark
+                                            ? Colors.white.withOpacity(0.05)
+                                            : Colors.grey.shade100,
+                                      ),
                                     ),
                                   ),
-                                  child: CachedNetworkImage(
-                                    imageUrl: qrCodeUrl,
-                                    width: 40,
-                                    height: 40,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? const Color(
+                                                      0xFF1E1E1E,
+                                                    ).withOpacity(0.3)
+                                                  : Colors.grey.shade100,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              isDark
+                                                  ? Icons.dark_mode
+                                                  : Icons.light_mode,
+                                              size: 20,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.grey.shade600,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Text(
+                                            'Dark Mode',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.normal,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        width: 48,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFFFFD00B)
+                                              : Colors.grey.shade300,
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                        ),
+                                        child: Stack(
+                                          children: [
+                                            AnimatedPositioned(
+                                              duration: const Duration(
+                                                milliseconds: 200,
+                                              ),
+                                              left: isDark ? 20 : 4,
+                                              top: 4,
+                                              child: Container(
+                                                width: 20,
+                                                height: 20,
+                                                decoration: BoxDecoration(
+                                                  color: isDark
+                                                      ? Colors.black
+                                                      : Colors.white,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
+                              _MenuItem(
+                                icon: Icons.help,
+                                title: 'Help & Support',
+                                iconRight: Icons.open_in_new,
+                                isLast: true,
+                                isDark: isDark,
+                                onTap: () {},
+                              ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Stats
-                    Row(
-                      children: [
-                        Expanded(
+                        ),
+                        const SizedBox(height: 24),
+                        // Logout Button
+                        GestureDetector(
+                          onTap: () {
+                            authProvider.logout();
+                            context.go('/welcome');
+                          },
                           child: Container(
-                            padding: const EdgeInsets.all(20),
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? const Color(0xFF121212)
-                                  : Colors.white,
+                                  ? const Color(0xFF1E1E1E).withOpacity(0.2)
+                                  : Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isDark
-                                    ? Colors.white.withOpacity(0.05)
+                                    ? const Color(0xFF1E1E1E).withOpacity(0.2)
                                     : Colors.grey.shade200,
                               ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFFFFD00B,
-                                    ).withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.bookmark,
-                                    color: Color(0xFFFFD00B),
-                                  ),
+                                const Icon(
+                                  Icons.logout,
+                                  size: 20,
+                                  color: Color(0xFFFFD00B),
                                 ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'SAVED VENUES',
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Log Out',
                                   style: TextStyle(
-                                    fontSize: 10,
-                                    letterSpacing: 1,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${favoritesProvider.favorites.length}',
-                                  style: TextStyle(
-                                    fontSize: 20,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: isDark ? Colors.white : Colors.black,
+                                    color: Color(0xFFFFD00B),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        // Version
+                        Center(
+                          child: Text(
+                            'Version 1.0.2',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    // Activity Section
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'My Activity',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.normal,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF121212) : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.05)
-                              : Colors.grey.shade200,
-                        ),
-                      ),
-                      child: _MenuItem(
-                        icon: Icons.favorite,
-                        title: 'Saved Places',
-                        subtitle: 'View your favorite spots',
-                        onTap: () => context.go('/saved-places'),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // App Settings
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'App Settings',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.normal,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF121212) : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.05)
-                              : Colors.grey.shade200,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                themeProvider.isDark
-                                    ? Icons.dark_mode
-                                    : Icons.light_mode,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            title: const Text('Dark Mode'),
-                            trailing: Switch(
-                              value: themeProvider.isDark,
-                              onChanged: (_) => themeProvider.toggleTheme(),
-                              activeColor: const Color(0xFFFFD00B),
-                            ),
-                          ),
-                          const Divider(height: 1),
-                          _MenuItem(
-                            icon: Icons.help,
-                            title: 'Help & Support',
-                            iconRight: Icons.open_in_new,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Logout Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          authProvider.logout();
-                          context.go('/welcome');
-                        },
-                        icon: const Icon(
-                          Icons.logout,
-                          color: Color(0xFFFFD00B),
-                        ),
-                        label: const Text(
-                          'Log Out',
-                          style: TextStyle(color: Color(0xFFFFD00B)),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: const BorderSide(color: Color(0xFFFFD00B)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Version 1.0.2',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade400,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        // QR Modal
+        if (_showQR)
+          _QRModal(
+            qrCodeUrl: qrCodeUrl,
+            user: user,
+            isDark: isDark,
+            onClose: () => setState(() => _showQR = false),
+          ),
+      ],
     );
   }
 }
@@ -443,134 +650,245 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
-  final IconData? iconRight;
-  final VoidCallback? onTap;
+  final IconData iconRight;
+  final bool isLast;
+  final bool isDark;
+  final VoidCallback onTap;
 
   const _MenuItem({
     required this.icon,
     required this.title,
     this.subtitle,
-    this.iconRight,
-    this.onTap,
+    this.iconRight = Icons.chevron_right,
+    this.isLast = false,
+    required this.isDark,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 20, color: Colors.grey.shade600),
-      ),
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle!) : null,
-      trailing: Icon(
-        iconRight ?? Icons.chevron_right,
-        color: Colors.grey.shade400,
-      ),
+    return GestureDetector(
       onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          border: isLast
+              ? null
+              : Border(
+                  bottom: BorderSide(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.grey.shade100,
+                  ),
+                ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF1E1E1E).withOpacity(0.3)
+                        : Colors.grey.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 20, color: Colors.grey.shade400),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.normal,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+            Icon(iconRight, size: 20, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _QRCodeDialog extends StatelessWidget {
+class _QRModal extends StatelessWidget {
   final String qrCodeUrl;
-  final user;
+  final dynamic user;
+  final bool isDark;
+  final VoidCallback onClose;
 
-  const _QRCodeDialog({required this.qrCodeUrl, this.user});
+  const _QRModal({
+    required this.qrCodeUrl,
+    required this.user,
+    required this.isDark,
+    required this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'DIGITAL PASS',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFFFD00B),
+    return Material(
+      color: Colors.transparent,
+      child: GestureDetector(
+        onTap: onClose,
+        child: Container(
+          color: (isDark ? Colors.black : const Color(0xFFF9FAFB)).withOpacity(
+            0.95,
+          ),
+          child: Center(
+            child: GestureDetector(
+              onTap: () {}, // Prevent closing when tapping on modal content
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 400),
+                margin: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.1)
+                        : Colors.grey.shade200,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Scan at venue terminal',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: CachedNetworkImage(
-                imageUrl: qrCodeUrl,
-                width: 256,
-                height: 256,
-              ),
-            ),
-            if (user != null) ...[
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: user.avatar ?? '',
-                        width: 48,
-                        height: 48,
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.person),
+                    // Close Button
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: GestureDetector(
+                        onTap: onClose,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.grey.shade200,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 24),
+                    // Title
+                    Column(
+                      children: [
+                        Text(
+                          'DIGITAL PASS',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                            color: const Color(0xFFFFD00B),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Scan at venue terminal',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    // QR Code
+                    Container(
+                      width: 256,
+                      height: 256,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade100),
+                      ),
+                      child: CachedNetworkImage(
+                        imageUrl: qrCodeUrl,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    // User Info Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.05)
+                              : Colors.grey.shade200,
+                        ),
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            user.name ?? 'Guest User',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black,
+                          ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: user?.avatar ?? '',
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, url, error) => Container(
+                                width: 48,
+                                height: 48,
+                                color: Colors.grey.shade300,
+                                child: const Icon(Icons.person, size: 24),
+                              ),
                             ),
                           ),
-                          Text(
-                            user.id ?? '---',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                              fontFamily: 'monospace',
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user?.name ?? 'Guest User',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  user?.id ?? '---',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'monospace',
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -579,8 +897,8 @@ class _QRCodeDialog extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
     );

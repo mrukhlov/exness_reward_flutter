@@ -150,7 +150,7 @@ class WelcomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 40),
               // Action Buttons
               Padding(
                 padding: const EdgeInsets.all(24),
@@ -170,16 +170,16 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
+                          children: const [
+                            Text(
                               'Log In',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const Spacer(),
-                            const Icon(Icons.arrow_forward),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward),
                           ],
                         ),
                       ),
@@ -191,8 +191,7 @@ class WelcomeScreen extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: () => context.go('/register'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor:
-                              isDark ? Colors.white : Colors.black,
+                          foregroundColor: isDark ? Colors.white : Colors.black,
                           side: BorderSide(
                             color: isDark
                                 ? Colors.white.withOpacity(0.2)
@@ -255,4 +254,3 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 }
-

@@ -67,7 +67,10 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => context.pop(),
+                    onPressed: () {
+                      // Always return to profile page
+                      context.go('/profile');
+                    },
                     color: Colors.grey.shade400,
                   ),
                   const SizedBox(width: 8),
@@ -180,7 +183,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
                               ? const Color(0xFF1E1E1E)
                               : Colors.white,
                           child: InkWell(
-                            onTap: () => context.go('/venue/${venue.id}'),
+                            onTap: () => context.push('/venue/${venue.id}'),
                             borderRadius: BorderRadius.circular(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
