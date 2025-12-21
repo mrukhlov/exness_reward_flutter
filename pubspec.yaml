@@ -1,0 +1,55 @@
+name: reward_flutter
+description: Exness Rewards Flutter App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Icons
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  
+  # State Management
+  provider: ^6.1.2
+  
+  # Navigation
+  go_router: ^17.0.1
+  
+  # HTTP & API
+  http: ^1.2.2
+  dio: ^5.4.3+1
+  
+  # Storage
+  shared_preferences: ^2.2.3
+  
+  # Maps
+  google_maps_flutter: ^2.9.0
+  geolocator: ^14.0.2
+  location: ^8.0.1
+  
+  # Image Loading
+  cached_network_image: ^3.3.1
+  
+  # Utilities
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  share_plus: ^12.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # Assets
+  assets:
+    - assets/images/
+  
+  # Note: Fonts are loaded via google_fonts package, no local font files needed
