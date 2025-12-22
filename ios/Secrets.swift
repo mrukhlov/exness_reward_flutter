@@ -5,6 +5,6 @@
 import Foundation
 
 struct Secrets {
-    static let googleMapsAPIKey = "AIzaSyD0HzwGo_TMx7rLVl73Gy51WL10ShdDx_4"
+    static let googleMapsAPIKey = "AIzaSyBnK4hxFkOCu1nGL4DcTAiH0NsFpBEmfZk"
 }
 

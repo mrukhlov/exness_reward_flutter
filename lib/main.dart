@@ -6,6 +6,8 @@ import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/location_provider.dart';
 import 'providers/favorites_provider.dart';
+import 'providers/venues_provider.dart';
+import 'providers/events_provider.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -16,6 +18,13 @@ import 'screens/profile_screen.dart';
 import 'screens/venue_detail_screen.dart';
 import 'screens/saved_places_screen.dart';
 import 'screens/event_detail_screen.dart';
+
+GoRouter? _router;
+
+GoRouter _getRouter(BuildContext context) {
+  _router ??= _createRouter(context);
+  return _router!;
+}
 
 void main() {
   runApp(const MyApp());
@@ -31,6 +40,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => VenuesProvider()),
+        ChangeNotifierProvider(create: (_) => EventsProvider()),
         ChangeNotifierProxyProvider<AuthProvider, FavoritesProvider>(
           create: (context) => FavoritesProvider(
             Provider.of<AuthProvider>(context, listen: false),
@@ -39,35 +50,42 @@ class MyApp extends StatelessWidget {
               previous ?? FavoritesProvider(authProvider),
         ),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, _) {
-          return MaterialApp.router(
-            title: 'Exness Rewards',
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.light,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFFFFD00B),
-                brightness: Brightness.light,
-              ),
-              textTheme: GoogleFonts.manropeTextTheme(),
-              appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
-            ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFFFFD00B),
-                brightness: Brightness.dark,
-              ),
-              textTheme: GoogleFonts.manropeTextTheme(
-                ThemeData.dark().textTheme,
-              ),
-              appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
-            ),
-            themeMode: themeProvider.themeMode,
-            routerConfig: _createRouter(context),
+      child: Builder(
+        builder: (context) {
+          // Get or create router once and reuse it
+          final router = _getRouter(context);
+          return Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) {
+              return MaterialApp.router(
+                key: ValueKey(themeProvider.themeMode), // Key to force rebuild on theme change
+                title: 'Exness Rewards',
+                debugShowCheckedModeBanner: false,
+                theme: ThemeData(
+                  useMaterial3: true,
+                  brightness: Brightness.light,
+                  colorScheme: ColorScheme.fromSeed(
+                    seedColor: const Color(0xFFFFD00B),
+                    brightness: Brightness.light,
+                  ),
+                  textTheme: GoogleFonts.manropeTextTheme(),
+                  appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+                ),
+                darkTheme: ThemeData(
+                  useMaterial3: true,
+                  brightness: Brightness.dark,
+                  colorScheme: ColorScheme.fromSeed(
+                    seedColor: const Color(0xFFFFD00B),
+                    brightness: Brightness.dark,
+                  ),
+                  textTheme: GoogleFonts.manropeTextTheme(
+                    ThemeData.dark().textTheme,
+                  ),
+                  appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+                ),
+                themeMode: themeProvider.themeMode,
+                routerConfig: router,
+              );
+            },
           );
         },
       ),

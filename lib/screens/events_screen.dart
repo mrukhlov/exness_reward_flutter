@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/event.dart';
-import '../services/api_service.dart';
+import '../providers/events_provider.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -12,13 +13,9 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
-  final _apiService = ApiService();
   DateTime _currentDate = DateTime.now();
   DateTime _selectedDate = DateTime.now();
   String _selectedCategory = 'All';
-  List<Event> _events = [];
-  bool _isLoading = true;
-  String? _error;
 
   static const List<String> _weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   static const List<String> _monthNames = [
@@ -44,43 +41,26 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchEvents();
-  }
-
-  Future<void> _fetchEvents() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
+    // Load events if stale, but don't force refresh on initial load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final eventsProvider = Provider.of<EventsProvider>(context, listen: false);
+      if (eventsProvider.isStaleForMonth(_currentDate)) {
+        eventsProvider.fetchEventsForMonth(date: _currentDate);
+      }
     });
-
-    try {
-      final year = _currentDate.year;
-      final month = _currentDate.month;
-      final startDate = DateTime(year, month, 1);
-      final endDate = DateTime(year, month + 1, 0);
-
-      final events = await _apiService.getEvents(
-        startDate: DateFormat('yyyy-MM-dd').format(startDate),
-        endDate: DateFormat('yyyy-MM-dd').format(endDate),
-      );
-
-      setState(() {
-        _events = events;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
-  List<Event> _getEventsForDate(DateTime date) {
+  Future<void> _fetchEvents({bool forceRefresh = false}) async {
+    final eventsProvider = Provider.of<EventsProvider>(context, listen: false);
+    await eventsProvider.fetchEventsForMonth(
+      date: _currentDate,
+      forceRefresh: forceRefresh,
+    );
+  }
+
+  List<Event> _getEventsForDate(DateTime date, List<Event> events) {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
-    return _events.where((event) {
+    return events.where((event) {
       final matchesDate = event.date == dateStr;
       final matchesCategory =
           _selectedCategory == 'All' ||
@@ -89,15 +69,15 @@ class _EventsScreenState extends State<EventsScreen> {
     }).toList();
   }
 
-  List<String> _getEventColorsForDate(DateTime date) {
-    final events = _getEventsForDate(date);
-    if (events.isEmpty) return [];
-    return events.map((e) => e.color).toList();
+  List<String> _getEventColorsForDate(DateTime date, List<Event> events) {
+    final dateEvents = _getEventsForDate(date, events);
+    if (dateEvents.isEmpty) return [];
+    return dateEvents.map((e) => e.color).toList();
   }
 
-  List<Event> get _filteredEventsList {
+  List<Event> _getFilteredEventsList(List<Event> events) {
     final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-    return _events.where((event) {
+    return events.where((event) {
       final matchesDate = event.date == dateStr;
       final matchesCategory =
           _selectedCategory == 'All' ||
@@ -126,7 +106,11 @@ class _EventsScreenState extends State<EventsScreen> {
     setState(() {
       _currentDate = DateTime(_currentDate.year, _currentDate.month + increment, 1);
     });
-    _fetchEvents();
+    // Fetch events for new month if stale
+    final eventsProvider = Provider.of<EventsProvider>(context, listen: false);
+    if (eventsProvider.isStaleForMonth(_currentDate)) {
+      eventsProvider.fetchEventsForMonth(date: _currentDate);
+    }
   }
 
   Color _parseColor(String colorString) {
@@ -140,74 +124,79 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Consumer<EventsProvider>(
+      builder: (context, eventsProvider, _) {
+        final events = eventsProvider.getEventsForMonth(_currentDate);
+        final isLoading = eventsProvider.isLoading;
+        final error = eventsProvider.error;
 
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(color: Color(0xFFFFD00B)),
-                const SizedBox(height: 16),
-                Text(
-                  'Loading events...',
-                  style: TextStyle(color: Colors.grey.shade500),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_error != null) {
-      return Scaffold(
-        backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    _error!,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _error = null;
-                        _isLoading = true;
-                      });
-                      _fetchEvents();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD00B),
-                      foregroundColor: Colors.black,
+        if (isLoading && events.isEmpty) {
+          return Scaffold(
+            backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
+            body: SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(color: Color(0xFFFFD00B)),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Loading events...',
+                      style: TextStyle(color: Colors.grey.shade500),
                     ),
-                    child: const Text('Retry'),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
-      );
-    }
+          );
+        }
 
-    return Scaffold(
-      backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 100),
-          child: Column(
+        if (error != null && events.isEmpty) {
+          return Scaffold(
+            backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        error,
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => _fetchEvents(forceRefresh: true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD00B),
+                          foregroundColor: Colors.black,
+                        ),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        final filteredEventsList = _getFilteredEventsList(events);
+
+        return Scaffold(
+          backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
+          body: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () => _fetchEvents(forceRefresh: true),
+              color: const Color(0xFFFFD00B),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 100),
+                child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
@@ -394,7 +383,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           final isSelected = _selectedDate.year == date.year &&
                               _selectedDate.month == date.month &&
                               _selectedDate.day == date.day;
-                          final eventColors = _getEventColorsForDate(date);
+                          final eventColors = _getEventColorsForDate(date, events);
 
                           return SizedBox(
                             width: MediaQuery.of(context).size.width / 7,
@@ -482,7 +471,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       ),
                     ),
                     Text(
-                      '${_filteredEventsList.length} Event${_filteredEventsList.length != 1 ? 's' : ''}',
+                      '${filteredEventsList.length} Event${filteredEventsList.length != 1 ? 's' : ''}',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -499,7 +488,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    ..._filteredEventsList.map((event) {
+                    ...filteredEventsList.map((event) {
                       final eventDate = DateTime.parse(event.date);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -652,7 +641,7 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                       );
                     }),
-                    if (_filteredEventsList.isEmpty)
+                    if (filteredEventsList.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40),
                         child: SizedBox(
@@ -682,8 +671,11 @@ class _EventsScreenState extends State<EventsScreen> {
               ),
             ],
           ),
-        ),
-      ),
+                ),
+              ),
+            ),
+          );
+      },
     );
   }
 }

@@ -189,21 +189,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ),
                                         padding: const EdgeInsets.all(2),
                                         child: ClipOval(
-                                          child: CachedNetworkImage(
-                                            imageUrl:
-                                                user?.avatar ??
-                                                'https://lh3.googleusercontent.com/aida-public/AB6AXuCiX2QKBp1JE2AKkHOvbNL5xAJBZy1TgviF6HSFfkm2AWSjjkeZYWTJ8-gtyphUCVIZ9A59f8S-N3x5CIzj9XvlDrf6IzP9pMBhXFPVck9dRrONIS-gOzrpoTwxuvFnqZXWkbYP1s0GHd4LmAE24tOYM_8N-ZMXi88KgURl_q0mq2yNw9kFr1DT4UIGNxcjLCCR8mvZR_EG8eBlLrlmL_CadT8ye3eSPnRBS5YG5754KsT9pCiWWakXjPb79ZSSY40jHHzrL83v_Q',
-                                            fit: BoxFit.cover,
-                                            errorWidget:
-                                                (context, url, error) =>
-                                                    Container(
-                                                      color:
-                                                          Colors.grey.shade200,
-                                                      child: const Icon(
-                                                        Icons.person,
-                                                        size: 40,
-                                                      ),
-                                                    ),
+                                          child: Container(
+                                            color: isDark
+                                                ? Colors.grey.shade800
+                                                : Colors.grey.shade200,
+                                            child: Icon(
+                                              Icons.person,
+                                              size: 40,
+                                              color: isDark
+                                                  ? Colors.grey.shade600
+                                                  : Colors.grey.shade400,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -472,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Column(
                             children: [
                               GestureDetector(
-                                onTap: () => themeProvider.toggleTheme(),
+                                onTap: () => themeProvider.toggleMapStyle(),
                                 child: Container(
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
@@ -502,9 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               shape: BoxShape.circle,
                                             ),
                                             child: Icon(
-                                              isDark
-                                                  ? Icons.dark_mode
-                                                  : Icons.light_mode,
+                                              Icons.map,
                                               size: 20,
                                               color: isDark
                                                   ? Colors.white
@@ -513,7 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ),
                                           const SizedBox(width: 16),
                                           Text(
-                                            'Dark Mode',
+                                            'Custom Map Style',
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.normal,
@@ -528,7 +522,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         width: 48,
                                         height: 28,
                                         decoration: BoxDecoration(
-                                          color: isDark
+                                          color: themeProvider.useCustomMapStyle
                                               ? const Color(0xFFFFD00B)
                                               : Colors.grey.shade300,
                                           borderRadius: BorderRadius.circular(
@@ -541,7 +535,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               duration: const Duration(
                                                 milliseconds: 200,
                                               ),
-                                              left: isDark ? 20 : 4,
+                                              curve: Curves.easeInOut,
+                                              left:
+                                                  themeProvider
+                                                      .useCustomMapStyle
+                                                  ? 20
+                                                  : 4,
                                               top: 4,
                                               child: Container(
                                                 width: 20,
@@ -853,16 +852,18 @@ class _QRModal extends StatelessWidget {
                       child: Row(
                         children: [
                           ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: user?.avatar ?? '',
+                            child: Container(
                               width: 48,
                               height: 48,
-                              fit: BoxFit.cover,
-                              errorWidget: (context, url, error) => Container(
-                                width: 48,
-                                height: 48,
-                                color: Colors.grey.shade300,
-                                child: const Icon(Icons.person, size: 24),
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade300,
+                              child: Icon(
+                                Icons.person,
+                                size: 24,
+                                color: isDark
+                                    ? Colors.grey.shade600
+                                    : Colors.grey.shade400,
                               ),
                             ),
                           ),

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/venue.dart';
 import '../providers/location_provider.dart';
-import '../services/api_service.dart';
+import '../providers/venues_provider.dart';
 import '../utils/geo_utils.dart';
 import '../utils/category_icons.dart';
 
@@ -17,15 +17,10 @@ class VenueListScreen extends StatefulWidget {
 
 class _VenueListScreenState extends State<VenueListScreen> {
   final _searchController = TextEditingController();
-  final _apiService = ApiService();
 
   String _activeCategory = 'All';
   String _searchQuery = '';
   bool _sortByDistance = false;
-  List<Venue> _venues = [];
-  List<String> _categories = ['All'];
-  bool _isLoading = true;
-  String? _error;
 
   @override
   void initState() {
@@ -34,8 +29,12 @@ class _VenueListScreenState extends State<VenueListScreen> {
       setState(() {
         _searchQuery = _searchController.text;
       });
+      _fetchData();
     });
-    _fetchData();
+    // Defer fetchData to after build phase completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchData();
+    });
   }
 
   @override
@@ -44,58 +43,25 @@ class _VenueListScreenState extends State<VenueListScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _fetchData({bool forceRefresh = false}) async {
+    final locationProvider = Provider.of<LocationProvider>(
+      context,
+      listen: false,
+    );
+    final venuesProvider = Provider.of<VenuesProvider>(context, listen: false);
 
-    try {
-      final locationProvider = Provider.of<LocationProvider>(
-        context,
-        listen: false,
-      );
-
-      // Fetch categories
-      final apiCategories = await _apiService.getCategories();
-      final categoryNames = ['All', ...apiCategories.map((cat) => cat.name)];
-
-      // Fetch venues grouped by category
-      final groupedVenues = await _apiService.getVenuesGrouped(
-        search: _searchQuery.isEmpty ? null : _searchQuery,
-        lat: locationProvider.latitude,
-        lng: locationProvider.longitude,
-        sortBy: _sortByDistance ? 'distance' : 'name',
-      );
-
-      // Flatten grouped venues
-      final allVenues = <Venue>[];
-      for (final group in groupedVenues) {
-        final venuesList = group['venues'] as List<dynamic>?;
-        if (venuesList != null) {
-          for (final venueJson in venuesList) {
-            allVenues.add(Venue.fromJson(venueJson as Map<String, dynamic>));
-          }
-        }
-      }
-
-      setState(() {
-        _categories = categoryNames;
-        _venues = allVenues;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    await venuesProvider.fetchVenuesGrouped(
+      search: _searchQuery.isEmpty ? null : _searchQuery,
+      lat: locationProvider.latitude,
+      lng: locationProvider.longitude,
+      sortBy: _sortByDistance ? 'distance' : 'name',
+      forceRefresh: forceRefresh,
+    );
   }
 
   List<Venue> get _filteredVenues {
-    var filtered = _venues.where((venue) {
+    final venuesProvider = Provider.of<VenuesProvider>(context, listen: false);
+    var filtered = venuesProvider.venues.where((venue) {
       return _activeCategory == 'All' || venue.category == _activeCategory;
     }).toList();
 
@@ -131,6 +97,7 @@ class _VenueListScreenState extends State<VenueListScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final locationProvider = Provider.of<LocationProvider>(context);
+    final venuesProvider = Provider.of<VenuesProvider>(context);
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : const Color(0xFFF9FAFB),
@@ -260,12 +227,12 @@ class _VenueListScreenState extends State<VenueListScreen> {
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _categories.length,
+                      itemCount: venuesProvider.categories.length,
                       itemBuilder: (context, index) {
-                        final category = _categories[index];
+                        final category = venuesProvider.categories[index];
                         final isActive = _activeCategory == category;
                         return Padding(
-                          padding: const EdgeInsets.only(right: 12),
+                          padding: const EdgeInsets.only(right: 2),
                           child: GestureDetector(
                             onTap: () {
                               setState(() => _activeCategory = category);
@@ -279,8 +246,8 @@ class _VenueListScreenState extends State<VenueListScreen> {
                                 color: isActive
                                     ? const Color(0xFFFFD00B)
                                     : (isDark
-                                        ? const Color(0xFF252525)
-                                        : Colors.white),
+                                          ? const Color(0xFF252525)
+                                          : Colors.white),
                                 borderRadius: BorderRadius.circular(18),
                                 border: isActive
                                     ? null
@@ -311,8 +278,8 @@ class _VenueListScreenState extends State<VenueListScreen> {
                                       color: isActive
                                           ? Colors.black
                                           : (isDark
-                                              ? Colors.grey.shade300
-                                              : Colors.grey.shade600),
+                                                ? Colors.grey.shade300
+                                                : Colors.grey.shade600),
                                     ),
                                   ),
                                 ],
@@ -328,7 +295,7 @@ class _VenueListScreenState extends State<VenueListScreen> {
             ),
             // Venues List
             Expanded(
-              child: _isLoading
+              child: venuesProvider.isLoading
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -339,68 +306,74 @@ class _VenueListScreenState extends State<VenueListScreen> {
                           const SizedBox(height: 16),
                           Text(
                             'Loading venues...',
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                            ),
+                            style: TextStyle(color: Colors.grey.shade500),
                           ),
                         ],
                       ),
                     )
-                  : _error != null
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.error_outline,
-                                  size: 48,
-                                  color: Colors.red,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _error!,
-                                  style: const TextStyle(color: Colors.red),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 24),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _error = null;
-                                      _isLoading = true;
-                                    });
-                                    _fetchData();
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFFD00B),
-                                    foregroundColor: Colors.black,
-                                  ),
-                                  child: const Text('Retry'),
-                                ),
-                              ],
+                  : venuesProvider.error != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red,
                             ),
-                          ),
-                        )
-                      : _filteredVenues.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.search_off,
-                                    size: 48,
-                                    color: Colors.grey.shade400,
+                            const SizedBox(height: 16),
+                            Text(
+                              venuesProvider.error!,
+                              style: const TextStyle(color: Colors.red),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: () {
+                                _fetchData();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFD00B),
+                                foregroundColor: Colors.black,
+                              ),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        await _fetchData(forceRefresh: true);
+                      },
+                      color: const Color(0xFFFFD00B),
+                      child: _filteredVenues.isEmpty
+                          ? SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.7,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.search_off,
+                                        size: 48,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No venues found',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No venues found',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             )
                           : ListView.builder(
@@ -410,14 +383,14 @@ class _VenueListScreenState extends State<VenueListScreen> {
                                 final venue = _filteredVenues[index];
                                 final distance =
                                     locationProvider.latitude != null &&
-                                            locationProvider.longitude != null
-                                        ? calculateDistance(
-                                            locationProvider.latitude!,
-                                            locationProvider.longitude!,
-                                            venue.lat,
-                                            venue.lng,
-                                          )
-                                        : venue.distance;
+                                        locationProvider.longitude != null
+                                    ? calculateDistance(
+                                        locationProvider.latitude!,
+                                        locationProvider.longitude!,
+                                        venue.lat,
+                                        venue.lng,
+                                      )
+                                    : venue.distance;
 
                                 return _VenueCard(
                                   venue: venue,
@@ -425,6 +398,7 @@ class _VenueListScreenState extends State<VenueListScreen> {
                                 );
                               },
                             ),
+                    ),
             ),
           ],
         ),
@@ -448,9 +422,7 @@ class _VenueCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF1A1A1A)
-              : Colors.white,
+          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDark
@@ -580,7 +552,9 @@ class _VenueCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w300,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade500,
                     ),
                   ),
                   const SizedBox(height: 16),
