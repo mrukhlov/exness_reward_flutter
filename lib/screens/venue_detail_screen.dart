@@ -227,7 +227,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
-                                        color: isDark ? Colors.white : Colors.black,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -304,7 +306,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
-                                      color: isDark ? Colors.white : Colors.black,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -329,11 +333,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                               decoration: BoxDecoration(
                                 color: venue.isOpen
                                     ? (isDark
-                                        ? Colors.green.withOpacity(0.3)
-                                        : Colors.green.shade100)
+                                          ? Colors.green.withOpacity(0.3)
+                                          : Colors.green.shade100)
                                     : (isDark
-                                        ? Colors.red.withOpacity(0.3)
-                                        : Colors.red.shade100),
+                                          ? Colors.red.withOpacity(0.3)
+                                          : Colors.red.shade100),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: venue.isOpen
@@ -379,8 +383,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                   width: 128,
                                   height: 128,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFFD00B)
-                                        .withOpacity(0.1),
+                                    color: const Color(
+                                      0xFFFFD00B,
+                                    ).withOpacity(0.1),
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -391,7 +396,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Expanded(
                                         child: Column(
@@ -439,7 +445,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFFFD00B),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         child: const Icon(
                                           Icons.local_offer,
@@ -467,14 +475,17 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  ...['Visit the venue', 'Present ID', 'Enjoy rewards']
-                                      .asMap()
-                                      .entries
-                                      .map((entry) {
+                                  ...[
+                                    'Visit the venue',
+                                    'Present ID',
+                                    'Enjoy rewards',
+                                  ].asMap().entries.map((entry) {
                                     final index = entry.key;
                                     final text = entry.value;
                                     return Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 12,
+                                      ),
                                       child: Row(
                                         children: [
                                           Container(
@@ -482,7 +493,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                             height: 24,
                                             decoration: BoxDecoration(
                                               color: isDark
-                                                  ? Colors.white.withOpacity(0.1)
+                                                  ? Colors.white.withOpacity(
+                                                      0.1,
+                                                    )
                                                   : Colors.grey.shade200,
                                               shape: BoxShape.circle,
                                             ),
@@ -586,7 +599,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                     ],
                                   ),
                                 ),
-                              if (venue.openHours != null && venue.phone != null)
+                              if (venue.openHours != null &&
+                                  venue.phone != null)
                                 Divider(
                                   height: 1,
                                   color: isDark
@@ -652,6 +666,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                         const SizedBox(height: 24),
                         // About Section
                         Container(
+                          width: double.infinity,
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             color: isDark
@@ -677,7 +692,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                venue.description ?? 'No description available.',
+                                venue.description ??
+                                    'No description available.',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: isDark
