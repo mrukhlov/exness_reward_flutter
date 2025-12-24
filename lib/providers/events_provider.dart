@@ -10,6 +10,8 @@ class EventsProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   DateTime? _lastFetchTime;
+  DateTime? _lastSelectedDate;
+  bool _hasBeenVisited = false;
 
   List<Event> get events {
     // Return all events from all months
@@ -75,6 +77,19 @@ class EventsProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Set the last selected date
+  void setLastSelectedDate(DateTime date) {
+    _lastSelectedDate = date;
+    _hasBeenVisited = true;
+    notifyListeners();
+  }
+
+  /// Get the last selected date
+  DateTime? get lastSelectedDate => _lastSelectedDate;
+
+  /// Check if events screen has been visited before
+  bool get hasBeenVisited => _hasBeenVisited;
 
   /// Clear events data
   void clear() {

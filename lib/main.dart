@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/location_provider.dart';
@@ -222,7 +223,21 @@ class MainTabScaffold extends StatelessWidget {
               label: 'EVENTS',
               isSelected: currentIndex == 2,
               isDark: isDark,
-              onTap: () => context.go('/events'),
+              onTap: () {
+                final eventsProvider = Provider.of<EventsProvider>(
+                  context,
+                  listen: false,
+                );
+                if (eventsProvider.hasBeenVisited &&
+                    eventsProvider.lastSelectedDate != null) {
+                  final selectedDateStr = DateFormat('yyyy-MM-dd').format(
+                    eventsProvider.lastSelectedDate!,
+                  );
+                  context.go('/events?selectedDate=$selectedDateStr');
+                } else {
+                  context.go('/events');
+                }
+              },
             ),
             _BottomNavItem(
               icon: Icons.person,
