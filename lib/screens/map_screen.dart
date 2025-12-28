@@ -38,6 +38,7 @@ class _MapScreenState extends State<MapScreen> {
   String _searchQuery = '';
   String? _selectedVenueId;
   final MarkerCache _markerCache = MarkerCache();
+  final TextEditingController _searchController = TextEditingController();
   // Local cache mapping venue ID + selection state to icon (populated from global cache)
   final Map<String, gmaps.BitmapDescriptor> _markerIcons = {};
   final Map<String, apple_maps.BitmapDescriptor> _appleMarkerIcons = {};
@@ -71,6 +72,12 @@ class _MapScreenState extends State<MapScreen> {
     if (widget.selectedVenueId != null) {
       _selectedVenueId = widget.selectedVenueId;
     }
+    // Initialize search controller
+    _searchController.addListener(() {
+      if (mounted) {
+        setState(() => _searchQuery = _searchController.text);
+      }
+    });
     // Load marker icons when venues are available from provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadMarkerIcons();
@@ -105,6 +112,7 @@ class _MapScreenState extends State<MapScreen> {
       }
       _themeListenerAdded = false;
     }
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -954,16 +962,7 @@ class _MapScreenState extends State<MapScreen> {
                         ],
                       ),
                       child: TextField(
-                        controller: TextEditingController(text: _searchQuery)
-                          ..selection = TextSelection.collapsed(
-                            offset: _searchQuery.length,
-                          ),
-                        onChanged: (value) {
-                          if (mounted) {
-                            setState(() => _searchQuery = value);
-                            // Venues are loaded from provider, just trigger rebuild
-                          }
-                        },
+                        controller: _searchController,
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black,
                           fontSize: 16,
@@ -980,6 +979,23 @@ class _MapScreenState extends State<MapScreen> {
                             size: 24,
                             color: isDark ? Colors.white : Colors.grey.shade600,
                           ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    size: 20,
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.grey.shade600,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    if (mounted) {
+                                      setState(() => _searchQuery = '');
+                                    }
+                                  },
+                                )
+                              : null,
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,

@@ -21,6 +21,13 @@ class _VenueListScreenState extends State<VenueListScreen> {
   String _activeCategory = 'All';
   String _searchQuery = '';
   bool _sortByDistance = false;
+  
+  // Filter state
+  bool _showFilters = false;
+  String? _selectedPriceLevel;
+  double _minRating = 0.0;
+  bool _openNowOnly = false;
+  bool _partnerOnly = false;
 
   @override
   void initState() {
@@ -62,7 +69,37 @@ class _VenueListScreenState extends State<VenueListScreen> {
   List<Venue> get _filteredVenues {
     final venuesProvider = Provider.of<VenuesProvider>(context, listen: false);
     var filtered = venuesProvider.venues.where((venue) {
-      return _activeCategory == 'All' || venue.category == _activeCategory;
+      // Category filter
+      final matchesCategory =
+          _activeCategory == 'All' || venue.category == _activeCategory;
+      
+      // Search filter
+      final query = _searchQuery.toLowerCase();
+      final matchesSearch = query.isEmpty ||
+          venue.name.toLowerCase().contains(query) ||
+          venue.category.toLowerCase().contains(query) ||
+          (venue.address?.toLowerCase().contains(query) ?? false) ||
+          venue.type.toLowerCase().contains(query);
+      
+      // Price level filter
+      final matchesPrice = _selectedPriceLevel == null ||
+          venue.priceLevel == _selectedPriceLevel;
+      
+      // Rating filter
+      final matchesRating = venue.rating >= _minRating;
+      
+      // Open now filter
+      final matchesOpen = !_openNowOnly || venue.isOpen;
+      
+      // Partner filter
+      final matchesPartner = !_partnerOnly || venue.isPartner;
+      
+      return matchesCategory &&
+          matchesSearch &&
+          matchesPrice &&
+          matchesRating &&
+          matchesOpen &&
+          matchesPartner;
     }).toList();
 
     if (_sortByDistance) {
@@ -91,6 +128,59 @@ class _VenueListScreenState extends State<VenueListScreen> {
     }
 
     return filtered;
+  }
+  
+  bool get _hasActiveFilters {
+    return _selectedPriceLevel != null ||
+        _minRating > 0.0 ||
+        _openNowOnly ||
+        _partnerOnly;
+  }
+  
+  void _resetFilters() {
+    setState(() {
+      _selectedPriceLevel = null;
+      _minRating = 0.0;
+      _openNowOnly = false;
+      _partnerOnly = false;
+    });
+  }
+  
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFFFFD00B)
+              : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFFFD00B)
+                : (isDark
+                    ? Colors.grey.shade700
+                    : Colors.grey.shade300),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected
+                ? Colors.black
+                : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -167,13 +257,127 @@ class _VenueListScreenState extends State<VenueListScreen> {
               padding: const EdgeInsets.only(bottom: 16),
               child: Column(
                 children: [
-                  // Search Bar
+                  // Search Bar and Filter Button
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Container(
-                      height: 48,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF252525)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.transparent
+                                    : Colors.grey.shade200,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (_) => _fetchData(),
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                                fontSize: 16,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Search venues or cuisines...',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 16,
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: Colors.grey.shade400,
+                                  size: 24,
+                                ),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(
+                                          Icons.close,
+                                          color: Colors.grey.shade600,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          _fetchData();
+                                        },
+                                      )
+                                    : null,
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Filter Button
+                        GestureDetector(
+                          onTap: () {
+                            setState(() => _showFilters = !_showFilters);
+                          },
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: _hasActiveFilters
+                                  ? const Color(0xFFFFD00B)
+                                  : (isDark
+                                      ? const Color(0xFF252525)
+                                      : Colors.white),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.transparent
+                                    : Colors.grey.shade200,
+                              ),
+                            ),
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: Icon(
+                                    Icons.tune,
+                                    color: _hasActiveFilters
+                                        ? Colors.black
+                                        : Colors.grey.shade400,
+                                    size: 24,
+                                  ),
+                                ),
+                                if (_hasActiveFilters)
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Filter Panel
+                  if (_showFilters)
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF252525) : Colors.white,
+                        color: isDark
+                            ? const Color(0xFF252525)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isDark
@@ -181,46 +385,201 @@ class _VenueListScreenState extends State<VenueListScreen> {
                               : Colors.grey.shade200,
                         ),
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (_) => _fetchData(),
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                          fontSize: 16,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Search venues or cuisines...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontSize: 16,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey.shade400,
-                            size: 24,
-                          ),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.close,
-                                    color: Colors.grey.shade600,
-                                    size: 20,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Filters',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                              if (_hasActiveFilters)
+                                TextButton(
+                                  onPressed: _resetFilters,
+                                  child: Text(
+                                    'Reset',
+                                    style: TextStyle(
+                                      color: const Color(0xFFFFD00B),
+                                      fontSize: 14,
+                                    ),
                                   ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _fetchData();
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                                ),
+                            ],
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          // Price Level Filter
+                          Text(
+                            'Price Level',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? Colors.grey.shade300
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              _buildFilterChip(
+                                label: 'Any',
+                                isSelected: _selectedPriceLevel == null,
+                                onTap: () {
+                                  setState(() => _selectedPriceLevel = null);
+                                },
+                                isDark: isDark,
+                              ),
+                              _buildFilterChip(
+                                label: '\$',
+                                isSelected: _selectedPriceLevel == '\$',
+                                onTap: () {
+                                  setState(() => _selectedPriceLevel = '\$');
+                                },
+                                isDark: isDark,
+                              ),
+                              _buildFilterChip(
+                                label: '\$\$',
+                                isSelected: _selectedPriceLevel == '\$\$',
+                                onTap: () {
+                                  setState(() => _selectedPriceLevel = '\$\$');
+                                },
+                                isDark: isDark,
+                              ),
+                              _buildFilterChip(
+                                label: '\$\$\$',
+                                isSelected: _selectedPriceLevel == '\$\$\$',
+                                onTap: () {
+                                  setState(() => _selectedPriceLevel = '\$\$\$');
+                                },
+                                isDark: isDark,
+                              ),
+                              _buildFilterChip(
+                                label: '\$\$\$\$',
+                                isSelected: _selectedPriceLevel == '\$\$\$\$',
+                                onTap: () {
+                                  setState(() => _selectedPriceLevel = '\$\$\$\$');
+                                },
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          // Rating Filter
+                          Text(
+                            'Minimum Rating',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? Colors.grey.shade300
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Slider(
+                                  value: _minRating,
+                                  min: 0.0,
+                                  max: 5.0,
+                                  divisions: 10,
+                                  activeColor: const Color(0xFFFFD00B),
+                                  inactiveColor: isDark
+                                      ? Colors.grey.shade700
+                                      : Colors.grey.shade300,
+                                  onChanged: (value) {
+                                    setState(() => _minRating = value);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                width: 50,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.grey.shade800
+                                      : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  _minRating.toStringAsFixed(1),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          // Open Now Filter
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Open Now Only',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                              Switch(
+                                value: _openNowOnly,
+                                onChanged: (value) {
+                                  setState(() => _openNowOnly = value);
+                                },
+                                activeColor: const Color(0xFFFFD00B),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // Partner Only Filter
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Partner Venues Only',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                              Switch(
+                                value: _partnerOnly,
+                                onChanged: (value) {
+                                  setState(() => _partnerOnly = value);
+                                },
+                                activeColor: const Color(0xFFFFD00B),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ),
                   // Category Chips
                   SizedBox(
                     height: 36,
