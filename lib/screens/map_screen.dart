@@ -467,24 +467,28 @@ class _MapScreenState extends State<MapScreen> {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
       } else if (Platform.isIOS) {
-        // iOS: Try Google Maps app first, then Apple Maps
-        // 1. Try Google Maps iOS app
+        // iOS: Prioritize Google Maps app, then fallback to Apple Maps or web
+        // 1. Try Google Maps iOS app first (preferred)
         final googleMapsUrl = Uri.parse(
           'comgooglemaps://?daddr=$lat,$lng&directionsmode=driving',
         );
         try {
+          // Check if Google Maps app is installed
           if (await canLaunchUrl(googleMapsUrl)) {
             await launchUrl(
               googleMapsUrl,
               mode: LaunchMode.externalApplication,
             );
             launched = true;
+          } else {
+            // Google Maps not installed, try launching anyway (might prompt to install)
+            // Or fall through to next option
           }
         } catch (e) {
-          print('⚠️ Google Maps iOS failed: $e');
+          // Google Maps app not available, continue to fallback
         }
 
-        // 2. If that failed, try Apple Maps
+        // 2. If Google Maps app failed, try Apple Maps
         if (!launched) {
           final appleMapsUrl = Uri.parse('maps://?daddr=$lat,$lng&dirflg=d');
           try {
@@ -496,11 +500,11 @@ class _MapScreenState extends State<MapScreen> {
               launched = true;
             }
           } catch (e) {
-            print('⚠️ Apple Maps failed: $e');
+            // Apple Maps failed, continue to web fallback
           }
         }
 
-        // 3. Last resort: use Google Maps web URL
+        // 3. Last resort: use Google Maps web URL (always works)
         if (!launched) {
           url = Uri.parse(
             'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
