@@ -55,7 +55,10 @@ class _MapScreenState extends State<MapScreen> {
   // Local cache mapping venue ID + selection state to icon (populated from global cache)
   final Map<String, gmaps.BitmapDescriptor> _markerIcons = {};
   final Map<String, apple_maps.BitmapDescriptor> _appleMarkerIcons = {};
-  apple_maps.BitmapDescriptor? _blueUserMarkerIcon; // Cache for blue user location marker
+  apple_maps.BitmapDescriptor?
+  _blueUserMarkerIcon; // Cache for blue user location marker
+  // Store Apple Maps annotations in state to update them directly without rebuilding map
+  Set<apple_maps.Annotation> _appleMapAnnotations = {};
   bool _markersReady = false;
   bool _showUserLocation =
       false; // Track if user location marker should be shown
@@ -223,8 +226,9 @@ class _MapScreenState extends State<MapScreen> {
       if (mounted) {
         setState(() {
           _markersReady = true;
-          // Increment rebuild key to force Apple Map rebuild with new icons
+          // Build and store annotations for Apple Maps
           if (useAppleMaps) {
+            _appleMapAnnotations = _buildAppleMapsAnnotations();
             _appleMapRebuildKey++;
           }
         });
@@ -573,6 +577,67 @@ class _MapScreenState extends State<MapScreen> {
       if (mounted) {
         setState(() {
           _markerIcons[key] = icon;
+        });
+      }
+    }
+  }
+
+  /// Handle Apple Map annotation tap - update annotations directly without rebuilding map
+  /// This approach swaps icons directly in the annotations Set, preserving camera position
+  Future<void> _handleAppleMapAnnotationTap(Venue venue) async {
+    if (!mounted) return;
+
+    final previousSelected = _selectedVenueId;
+    final category = venue.category.isNotEmpty ? venue.category : venue.type;
+
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps;
+
+    print(venue);
+    if (useAppleMaps) {
+      // Get icons from cache (they should already be preloaded)
+      final selectedIcon = await _markerCache.getAppleMarkerIcon(
+        category,
+        true,
+      );
+
+      // Prepare unselected icon if there was a previous selection
+      apple_maps.BitmapDescriptor? unselectedIcon;
+      String? prevCategory;
+      if (previousSelected != null && previousSelected != venue.id) {
+        final venuesProvider = Provider.of<VenuesProvider>(
+          context,
+          listen: false,
+        );
+        final prevVenue = venuesProvider.venues.firstWhere(
+          (v) => v.id == previousSelected,
+        );
+        prevCategory = prevVenue.category.isNotEmpty
+            ? prevVenue.category
+            : prevVenue.type;
+        unselectedIcon = await _markerCache.getAppleMarkerIcon(
+          prevCategory!,
+          false,
+        );
+      }
+
+      // Update annotations directly by rebuilding them with updated icons
+      // This ensures all annotations have the correct icons based on selection state
+      if (mounted) {
+        setState(() {
+          // Update selected venue ID first
+          _selectedVenueId = venue.id;
+
+          // Update icon cache
+          _appleMarkerIcons['${venue.id}_selected'] = selectedIcon;
+          if (unselectedIcon != null && previousSelected != null) {
+            _appleMarkerIcons['${previousSelected}_unselected'] =
+                unselectedIcon;
+          }
+
+          // Rebuild all annotations with updated selection state
+          // This ensures the tapped marker gets selected icon and previous gets unselected
+          _appleMapAnnotations = _buildAppleMapsAnnotations();
         });
       }
     }
@@ -976,7 +1041,9 @@ class _MapScreenState extends State<MapScreen> {
           'apple_map_${themeProvider.useAppleMaps}_$_markersReady}_$_appleMapRebuildKey',
         ),
         initialCameraPosition: cameraPosition,
-        annotations: _buildAppleMapsAnnotations(),
+        annotations: _appleMapAnnotations.isEmpty
+            ? _buildAppleMapsAnnotations()
+            : _appleMapAnnotations,
         onMapCreated: (apple_maps.AppleMapController controller) async {
           if (!_appleMapController.isCompleted) {
             _appleMapController.complete(controller);
@@ -1000,57 +1067,11 @@ class _MapScreenState extends State<MapScreen> {
             print('✅ Native Apple Map created successfully');
           }
         },
-        onTap: (apple_maps.LatLng position) async {
-          // Find nearest venue to tapped position
-          Venue? nearestVenue;
-          double minDistance = double.infinity;
-
-          for (final venue in _filteredVenues) {
-            final distance =
-                ((venue.lat - position.latitude).abs() +
-                (venue.lng - position.longitude).abs());
-            if (distance < minDistance) {
-              minDistance = distance;
-              nearestVenue = venue;
-            }
-          }
-
-          if (nearestVenue != null && minDistance < 0.01) {
-            // Close enough to select venue
-            final previousSelected = _selectedVenueId;
-            final venue = nearestVenue; // Local variable for null safety
-            final category = venue.category.isNotEmpty
-                ? venue.category
-                : venue.type;
-
-            if (mounted) {
-              setState(() {
-                _selectedVenueId = venue.id;
-              });
-            }
-
-            // Update icons for both previously selected and newly selected markers
-            if (previousSelected != null && previousSelected != venue.id) {
-              final venuesProvider = Provider.of<VenuesProvider>(
-                context,
-                listen: false,
-              );
-              final prevVenue = venuesProvider.venues.firstWhere(
-                (v) => v.id == previousSelected,
-              );
-              final prevCategory = prevVenue.category.isNotEmpty
-                  ? prevVenue.category
-                  : prevVenue.type;
-              _updateMarkerIcon(previousSelected, prevCategory, false);
-            }
-            _updateMarkerIcon(venue.id, category, true);
-
-            // Don't animate camera on Apple Maps when marker is clicked
-            // (Apple Maps handles selection without camera animation)
-          } else {
-            if (mounted) {
-              setState(() => _selectedVenueId = null);
-            }
+        onTap: (apple_maps.LatLng position) {
+          // Clear selection when tapping on empty map area
+          // (Marker taps are handled by annotation onTap handlers)
+          if (mounted) {
+            setState(() => _selectedVenueId = null);
           }
         },
       );
@@ -1131,11 +1152,14 @@ class _MapScreenState extends State<MapScreen> {
       // Create a simple default icon if custom icon not available
       final markerIcon = icon ?? apple_maps.BitmapDescriptor.defaultAnnotation;
 
-      // Build annotation with custom icon (no info window)
+      // Build annotation with custom icon and onTap handler
       return apple_maps.Annotation(
         annotationId: apple_maps.AnnotationId(venue.id),
         position: apple_maps.LatLng(venue.lat, venue.lng),
         icon: markerIcon,
+        onTap: () {
+          _handleAppleMapAnnotationTap(venue);
+        },
       );
     }).toSet();
 
@@ -1680,8 +1704,8 @@ class _MapScreenState extends State<MapScreen> {
                             if (useAppleMaps) {
                               // Show user location marker for Apple Maps (blue circle)
                               if (_blueUserMarkerIcon == null) {
-                                _blueUserMarkerIcon =
-                                    await _markerCache.getBlueUserMarkerIcon();
+                                _blueUserMarkerIcon = await _markerCache
+                                    .getBlueUserMarkerIcon();
                               }
                               if (mounted) {
                                 setState(() {
