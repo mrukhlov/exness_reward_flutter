@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart' as latlong;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/venue.dart';
 import '../providers/location_provider.dart';
 import '../providers/favorites_provider.dart';
@@ -420,6 +421,115 @@ class _MapScreenState extends State<MapScreen> {
     _currentLng = venue.lng;
   }
 
+  Future<void> _openDirections(Venue venue) async {
+    try {
+      final lat = venue.lat;
+      final lng = venue.lng;
+      final address = venue.address ?? '';
+
+      Uri url;
+      bool launched = false;
+
+      if (Platform.isAndroid) {
+        // Android: Try multiple URL schemes
+        // 1. Try Google Maps navigation (most common)
+        url = Uri.parse('google.navigation:q=$lat,$lng');
+        try {
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
+            launched = true;
+          }
+        } catch (e) {
+          print('⚠️ Google Maps navigation failed: $e');
+        }
+
+        // 2. If that failed, try geo: scheme (opens default map app)
+        if (!launched) {
+          final query = address.isNotEmpty
+              ? Uri.encodeComponent(address)
+              : '$lat,$lng';
+          url = Uri.parse('geo:$lat,$lng?q=$query');
+          try {
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url, mode: LaunchMode.externalApplication);
+              launched = true;
+            }
+          } catch (e) {
+            print('⚠️ Geo scheme failed: $e');
+          }
+        }
+
+        // 3. Last resort: use Google Maps web URL
+        if (!launched) {
+          url = Uri.parse(
+            'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+          );
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
+      } else if (Platform.isIOS) {
+        // iOS: Try Google Maps app first, then Apple Maps
+        // 1. Try Google Maps iOS app
+        final googleMapsUrl = Uri.parse(
+          'comgooglemaps://?daddr=$lat,$lng&directionsmode=driving',
+        );
+        try {
+          if (await canLaunchUrl(googleMapsUrl)) {
+            await launchUrl(
+              googleMapsUrl,
+              mode: LaunchMode.externalApplication,
+            );
+            launched = true;
+          }
+        } catch (e) {
+          print('⚠️ Google Maps iOS failed: $e');
+        }
+
+        // 2. If that failed, try Apple Maps
+        if (!launched) {
+          final appleMapsUrl = Uri.parse('maps://?daddr=$lat,$lng&dirflg=d');
+          try {
+            if (await canLaunchUrl(appleMapsUrl)) {
+              await launchUrl(
+                appleMapsUrl,
+                mode: LaunchMode.externalApplication,
+              );
+              launched = true;
+            }
+          } catch (e) {
+            print('⚠️ Apple Maps failed: $e');
+          }
+        }
+
+        // 3. Last resort: use Google Maps web URL
+        if (!launched) {
+          url = Uri.parse(
+            'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+          );
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
+      } else {
+        // Web or other platforms: use Google Maps web URL
+        url = Uri.parse(
+          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+        );
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      print('⚠️ Error opening directions: $e');
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not open navigation. Please check if a maps app is installed.',
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   String _getMapStyle(bool isDark) {
     if (isDark) {
       return '''
@@ -517,7 +627,7 @@ class _MapScreenState extends State<MapScreen> {
     "stylers": [{"color": "#ffffff"}]
   },
   {
-    "featureType": "road.arterial",
+    "featureType": "road.arterial",add
     "elementType": "labels.text.fill",
     "stylers": [{"color": "#757575"}]
   },
@@ -1498,35 +1608,43 @@ class _MapScreenState extends State<MapScreen> {
                                 // Discount Badge and Open Status
                                 Row(
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFD00B),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        selectedVenue.discount.toUpperCase(),
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
+                                    Flexible(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFFD00B),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          selectedVenue.discount.toUpperCase(),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
                                         ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      selectedVenue.isOpen
-                                          ? 'Open now'
-                                          : 'Closed',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: isDark
-                                            ? Colors.grey.shade400
-                                            : Colors.grey.shade500,
+                                    Flexible(
+                                      child: Text(
+                                        selectedVenue.isOpen
+                                            ? 'Open now'
+                                            : 'Closed',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
                                       ),
                                     ),
                                   ],
@@ -1634,7 +1752,9 @@ class _MapScreenState extends State<MapScreen> {
                                 color: Colors.transparent,
                                 child: InkWell(
                                   onTap: () {
-                                    // TODO: Implement directions
+                                    if (selectedVenue != null) {
+                                      _openDirections(selectedVenue);
+                                    }
                                   },
                                   borderRadius: BorderRadius.circular(8),
                                   child: Row(
