@@ -342,10 +342,9 @@ class _MapScreenState extends State<MapScreen> {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
     canvas.drawCircle(center, radius, shadowPaint);
 
-    // Draw circle background (yellow for clusters)
+    // Draw circle background (white for clusters)
     final backgroundPaint = Paint()
-      ..color =
-          const Color(0xFFFFD00B) // exness-yellow
+      ..color = Colors.white
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, backgroundPaint);
 
@@ -1076,8 +1075,6 @@ class _MapScreenState extends State<MapScreen> {
           if (mounted) {
             setState(() {
               // Rebuild annotations to show all markers as unselected (white)
-              print('haha');
-              print(_selectedVenueId);
               _selectedVenueId = null;
               _appleMapAnnotations = _buildAppleMapsAnnotations();
             });
