@@ -9,9 +9,9 @@ import 'category_icons.dart';
 Future<gmaps.BitmapDescriptor> createCustomMarkerIcon({
   required String category,
   required bool isSelected,
-  double size = 42.0, // Increased from 36.0
+  double size = 80.0, // Increased from 42.0 to make markers bigger
 }) async {
-  final iconSize = isSelected ? 28.0 : 20.0; // Increased proportionally
+  final iconSize = isSelected ? 50.0 : 38.0; // Increased proportionally (was 28.0/20.0)
 
   // Background color: yellow if selected, white if not
   final backgroundColor = isSelected
@@ -86,9 +86,9 @@ Future<gmaps.BitmapDescriptor> createCustomMarkerIcon({
 Future<apple_maps.BitmapDescriptor> createCustomAppleMarkerIcon({
   required String category,
   required bool isSelected,
-  double size = 42.0, // Increased from 36.0
+  double size = 80.0, // Increased from 42.0 to make markers bigger
 }) async {
-  final iconSize = isSelected ? 28.0 : 20.0; // Increased proportionally
+  final iconSize = isSelected ? 50.0 : 38.0; // Increased proportionally (was 28.0/20.0)
 
   // Background color: yellow if selected, white if not
   final backgroundColor = isSelected

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:flutter_map/flutter_map.dart';
@@ -16,8 +17,18 @@ import '../providers/venues_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/category_icons.dart';
 import '../utils/marker_cache.dart';
-import '../utils/marker_helper.dart';
 import '../utils/geo_utils.dart';
+
+/// Cluster data class to represent a group of venues
+class _Cluster {
+  final List<Venue> venues;
+  final double lat;
+  final double lng;
+  
+  _Cluster(this.venues, this.lat, this.lng);
+  
+  int get count => venues.length;
+}
 
 class MapScreen extends StatefulWidget {
   final String? selectedVenueId;
@@ -53,6 +64,11 @@ class _MapScreenState extends State<MapScreen> {
   bool _themeListenerAdded = false; // Track if ThemeProvider listener is added
   // int _appleMapRebuildKey = 0; // Counter to force Apple Map rebuilds // Commented out - using Google Maps
   latlong.LatLng _currentCenter = const latlong.LatLng(34.678, 33.043);
+  int _lastZoomLevel = 0; // Track zoom level for marker scaling (rounded to avoid constant updates)
+  
+  // Clustering configuration
+  static const double _clusterZoomThreshold = 14.0; // Show clusters below this zoom level
+  static const double _clusterDistanceThreshold = 0.01; // Distance threshold for clustering (in degrees)
 
   static const gmaps.CameraPosition _initialPosition = gmaps.CameraPosition(
     target: gmaps.LatLng(34.678, 33.043),
@@ -229,6 +245,8 @@ class _MapScreenState extends State<MapScreen> {
           //   _appleMapRebuildKey++;
           // } // Commented out - using Google Maps
         });
+        // Preload cluster icons
+        _preloadClusterIcons();
         // Try to animate to selected venue after markers are ready
         _tryAnimateToSelectedVenue();
       }
@@ -270,6 +288,114 @@ class _MapScreenState extends State<MapScreen> {
     }).toList();
   }
 
+  /// Group nearby venues into clusters based on zoom level
+  List<_Cluster> _createClusters(List<Venue> venues, double? zoom) {
+    // If zoomed in enough, don't cluster (show individual markers)
+    if (zoom != null && zoom >= _clusterZoomThreshold) {
+      return venues.map((v) => _Cluster([v], v.lat, v.lng)).toList();
+    }
+    
+    // Calculate distance threshold based on zoom level
+    // Lower zoom = larger threshold (more clustering)
+    final distanceThreshold = zoom != null 
+        ? _clusterDistanceThreshold * (15.0 - zoom) / 5.0
+        : _clusterDistanceThreshold * 2.0;
+    
+    final clusters = <_Cluster>[];
+    final processed = <int>{};
+    
+    for (int i = 0; i < venues.length; i++) {
+      if (processed.contains(i)) continue;
+      
+      final venue = venues[i];
+      final clusterVenues = <Venue>[venue];
+      processed.add(i);
+      
+      // Find nearby venues to cluster together
+      for (int j = i + 1; j < venues.length; j++) {
+        if (processed.contains(j)) continue;
+        
+        final otherVenue = venues[j];
+        final distance = ((venue.lat - otherVenue.lat).abs() +
+            (venue.lng - otherVenue.lng).abs());
+        
+        if (distance < distanceThreshold) {
+          clusterVenues.add(otherVenue);
+          processed.add(j);
+        }
+      }
+      
+      // Calculate cluster center (average of all venues in cluster)
+      final avgLat = clusterVenues.map((v) => v.lat).reduce((a, b) => a + b) / clusterVenues.length;
+      final avgLng = clusterVenues.map((v) => v.lng).reduce((a, b) => a + b) / clusterVenues.length;
+      
+      clusters.add(_Cluster(clusterVenues, avgLat, avgLng));
+    }
+    
+    return clusters;
+  }
+
+  /// Create a cluster marker icon with count
+  Future<gmaps.BitmapDescriptor> _createClusterIcon(int count) async {
+    final size = 80.0; // Increased to match individual marker size
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    
+    final center = Offset(size / 2, size / 2);
+    final radius = size / 2 - 1;
+    
+    // Draw shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    canvas.drawCircle(center, radius, shadowPaint);
+    
+    // Draw circle background (yellow for clusters)
+    final backgroundPaint = Paint()
+      ..color = const Color(0xFFFFD00B) // exness-yellow
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, backgroundPaint);
+    
+    // Draw border
+    final borderPaint = Paint()
+      ..color = Colors.black.withOpacity(0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    canvas.drawCircle(center, radius, borderPaint);
+    
+    // Draw count text
+    final textStyle = TextStyle(
+      fontSize: count < 10 ? 28.0 : 24.0,
+      fontWeight: FontWeight.bold,
+      color: Colors.black,
+    );
+    
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: count.toString(),
+        style: textStyle,
+      ),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+    );
+    
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        center.dx - textPainter.width / 2,
+        center.dy - textPainter.height / 2,
+      ),
+    );
+    
+    // Convert to image
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    
+    return gmaps.BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+  }
+
   Set<gmaps.Marker> get _markers {
     final markers = <gmaps.Marker>{};
 
@@ -284,56 +410,154 @@ class _MapScreenState extends State<MapScreen> {
     // User location is handled by myLocationEnabled property on GoogleMap widget
     // No custom marker needed
 
-    // Add venue markers - use cached icons
-    final venueMarkers = _filteredVenues.map((venue) {
-      final isSelected = _selectedVenueId == venue.id;
-      final category = venue.category.isNotEmpty ? venue.category : venue.type;
-      final iconKey = '${venue.id}_${isSelected ? 'selected' : 'unselected'}';
+    // Create clusters based on zoom level
+    final clusters = _createClusters(_filteredVenues, _currentZoom);
+    
+    // Create markers for clusters or individual venues
+    for (final cluster in clusters) {
+      if (cluster.count == 1) {
+        // Single venue - show individual marker
+        final venue = cluster.venues.first;
+        final isSelected = _selectedVenueId == venue.id;
+        final category = venue.category.isNotEmpty ? venue.category : venue.type;
+        final iconKey = '${venue.id}_${isSelected ? 'selected' : 'unselected'}';
 
-      // Get cached icon or use default marker as fallback
-      final icon =
-          _markerIcons[iconKey] ??
-          gmaps.BitmapDescriptor.defaultMarkerWithHue(
-            isSelected
-                ? gmaps.BitmapDescriptor.hueYellow
-                : gmaps.BitmapDescriptor.hueRed,
-          );
+        // Get cached icon or use default marker as fallback
+        final icon =
+            _markerIcons[iconKey] ??
+            gmaps.BitmapDescriptor.defaultMarkerWithHue(
+              isSelected
+                  ? gmaps.BitmapDescriptor.hueYellow
+                  : gmaps.BitmapDescriptor.hueRed,
+            );
 
-      return gmaps.Marker(
-        markerId: gmaps.MarkerId(venue.id),
-        position: gmaps.LatLng(venue.lat, venue.lng),
-        icon: icon,
-        zIndexInt: isSelected ? 10 : 1,
-        onTap: () async {
-          if (!mounted) return;
-          final previousSelected = _selectedVenueId;
-          setState(() {
-            _selectedVenueId = venue.id;
+        markers.add(
+          gmaps.Marker(
+            markerId: gmaps.MarkerId(venue.id),
+            position: gmaps.LatLng(venue.lat, venue.lng),
+            icon: icon,
+            zIndexInt: isSelected ? 10 : 1,
+            onTap: () async {
+              if (!mounted) return;
+              final previousSelected = _selectedVenueId;
+              setState(() {
+                _selectedVenueId = venue.id;
+              });
+
+              // Update icons for both previously selected and newly selected markers
+              if (previousSelected != null && previousSelected != venue.id) {
+                final venuesProvider = Provider.of<VenuesProvider>(
+                  context,
+                  listen: false,
+                );
+                final prevVenue = venuesProvider.venues.firstWhere(
+                  (v) => v.id == previousSelected,
+                );
+                final prevCategory = prevVenue.category.isNotEmpty
+                    ? prevVenue.category
+                    : prevVenue.type;
+                await _updateMarkerIcon(previousSelected, prevCategory, false);
+              }
+              await _updateMarkerIcon(venue.id, category, true);
+
+              _animateToVenue(venue);
+            },
+          ),
+        );
+      } else {
+        // Multiple venues - show cluster marker
+        final clusterId = 'cluster_${cluster.lat}_${cluster.lng}_${cluster.count}';
+        
+        // Get cluster icon (cached or default)
+        final clusterIcon = _getClusterIcon(cluster.count);
+        
+        // Pre-create icon if not cached yet (async, will update on next rebuild)
+        if (!_clusterIconsByCount.containsKey(cluster.count)) {
+          _createClusterIcon(cluster.count).then((icon) {
+            if (mounted) {
+              setState(() {
+                _clusterIconsByCount[cluster.count] = icon;
+              });
+            }
           });
+        }
+        
+        markers.add(
+          gmaps.Marker(
+            markerId: gmaps.MarkerId(clusterId),
+            position: gmaps.LatLng(cluster.lat, cluster.lng),
+            icon: clusterIcon,
+            zIndexInt: 5,
+            onTap: () async {
+              // Zoom to cluster center when cluster is tapped
+              if (_mapController.isCompleted) {
+                final controller = await _mapController.future;
+                // Calculate appropriate zoom level based on cluster size
+                // Zoom in more for smaller clusters, less for larger ones
+                final targetZoom = _currentZoom != null
+                    ? (_currentZoom! + 2.0).clamp(10.0, 18.0)
+                    : 15.0;
+                
+                await controller.animateCamera(
+                  gmaps.CameraUpdate.newCameraPosition(
+                    gmaps.CameraPosition(
+                      target: gmaps.LatLng(cluster.lat, cluster.lng),
+                      zoom: targetZoom,
+                    ),
+                  ),
+                );
+                
+                // Update current position
+                if (mounted) {
+                  setState(() {
+                    _currentLat = cluster.lat;
+                    _currentLng = cluster.lng;
+                    _currentZoom = targetZoom;
+                  });
+                }
+              }
+            },
+          ),
+        );
+      }
+    }
 
-          // Update icons for both previously selected and newly selected markers
-          if (previousSelected != null && previousSelected != venue.id) {
-            final venuesProvider = Provider.of<VenuesProvider>(
-              context,
-              listen: false,
-            );
-            final prevVenue = venuesProvider.venues.firstWhere(
-              (v) => v.id == previousSelected,
-            );
-            final prevCategory = prevVenue.category.isNotEmpty
-                ? prevVenue.category
-                : prevVenue.type;
-            await _updateMarkerIcon(previousSelected, prevCategory, false);
-          }
-          await _updateMarkerIcon(venue.id, category, true);
-
-          _animateToVenue(venue);
-        },
-      );
-    }).toSet();
-
-    markers.addAll(venueMarkers);
     return markers;
+  }
+  
+  /// Cache for cluster icons by count (reusable across clusters)
+  final Map<int, gmaps.BitmapDescriptor> _clusterIconsByCount = {};
+  
+  /// Get or create cluster icon for a given count
+  gmaps.BitmapDescriptor _getClusterIcon(int count) {
+    // Check cache first
+    if (_clusterIconsByCount.containsKey(count)) {
+      return _clusterIconsByCount[count]!;
+    }
+    
+    // Return default icon temporarily, will be replaced when async creation completes
+    return gmaps.BitmapDescriptor.defaultMarkerWithHue(
+      gmaps.BitmapDescriptor.hueYellow,
+    );
+  }
+  
+  /// Pre-create cluster icons for common counts
+  Future<void> _preloadClusterIcons() async {
+    // Pre-create icons for counts 2-50
+    for (int count = 2; count <= 50; count++) {
+      if (!_clusterIconsByCount.containsKey(count)) {
+        try {
+          final icon = await _createClusterIcon(count);
+          if (mounted) {
+            setState(() {
+              _clusterIconsByCount[count] = icon;
+            });
+          }
+        } catch (e) {
+          // Ignore errors, will use default icon
+        }
+      }
+    }
   }
 
   Future<void> _updateMarkerIcon(
@@ -732,9 +956,23 @@ class _MapScreenState extends State<MapScreen> {
         print('📍 Camera move started');
       },
       onCameraMove: (gmaps.CameraPosition position) {
-        _currentZoom = position.zoom;
+        final newZoom = position.zoom;
+        final roundedZoom = newZoom.round();
+        
+        // Update zoom level
+        _currentZoom = newZoom;
         _currentLat = position.target.latitude;
         _currentLng = position.target.longitude;
+        
+        // Trigger rebuild when zoom changes significantly (for clustering)
+        if (roundedZoom != _lastZoomLevel) {
+          _lastZoomLevel = roundedZoom;
+          if (mounted) {
+            setState(() {
+              // Trigger rebuild to update clusters
+            });
+          }
+        }
       },
       onCameraIdle: () {
         print('📍 Camera idle - map tiles should be loaded');
