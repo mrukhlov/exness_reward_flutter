@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -166,6 +167,46 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Adaptive scaling factor based on screen height
+    final isSmallScreen = screenHeight < 800;
+    
+    // Adaptive spacing
+    final horizontalPadding = isSmallScreen 
+        ? 16.0 
+        : math.max(20.0, math.min(24.0, screenWidth * 0.06));
+    final verticalSpacing = isSmallScreen 
+        ? 16.0 
+        : math.max(20.0, math.min(32.0, screenHeight * 0.025));
+    final sectionSpacing = isSmallScreen 
+        ? 20.0 
+        : math.max(24.0, math.min(32.0, screenHeight * 0.04));
+    
+    // Adaptive font sizes
+    final headerFontSize = isSmallScreen ? 20.0 : 24.0;
+    final categoryFontSize = isSmallScreen ? 12.0 : 14.0;
+    final categoryHeight = isSmallScreen ? 36.0 : 40.0;
+    final categoryPadding = isSmallScreen 
+        ? EdgeInsets.symmetric(horizontal: 10, vertical: 8)
+        : EdgeInsets.symmetric(horizontal: 20, vertical: 10);
+    final categorySpacing = isSmallScreen ? 6.0 : 12.0;
+    final monthFontSize = isSmallScreen ? 16.0 : 20.0;
+    final calendarDayFontSize = isSmallScreen ? 12.0 : 16.0;
+    final calendarCellSize = isSmallScreen ? 28.0 : 40.0;
+    final calendarPadding = isSmallScreen ? 6.0 : 16.0;
+    final calendarOuterPadding = isSmallScreen ? 6.0 : 16.0;
+    final calendarSpacing = isSmallScreen ? 4.0 : 8.0;
+    final selectedDateFontSize = isSmallScreen ? 18.0 : 20.0;
+    final eventCountFontSize = isSmallScreen ? 12.0 : 14.0;
+    final eventTitleFontSize = isSmallScreen ? 16.0 : 18.0;
+    final eventDateBoxWidth = isSmallScreen ? 56.0 : 64.0;
+    final eventDateBoxHeight = isSmallScreen ? 72.0 : 80.0;
+    final eventDateDayFontSize = isSmallScreen ? 20.0 : 24.0;
+    final eventDateMonthFontSize = isSmallScreen ? 10.0 : 12.0;
+    final eventTimeFontSize = isSmallScreen ? 11.0 : 12.0;
+    
     return Consumer<EventsProvider>(
       builder: (context, eventsProvider, _) {
         final events = eventsProvider.getEventsForMonth(_currentDate);
@@ -282,39 +323,41 @@ class _EventsScreenState extends State<EventsScreen> {
                     ),
                     // Categories
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
-                        children: [
-                          ..._categories.map((cat) {
-                            final isActive = _selectedCategory == cat['id'];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(
-                                    () =>
-                                        _selectedCategory = cat['id'] as String,
-                                  );
-                                },
-                                child: Container(
-                                  height: 40,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isActive
-                                        ? const Color(0xFFFFD00B)
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ..._categories.map((cat) {
+                              final isActive = _selectedCategory == cat['id'];
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  right: categorySpacing,
+                                ),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(
+                                      () =>
+                                          _selectedCategory = cat['id'] as String,
+                                    );
+                                  },
+                                  child: Container(
+                                    height: categoryHeight,
+                                    padding: categoryPadding,
+                                    decoration: BoxDecoration(
                                       color: isActive
                                           ? const Color(0xFFFFD00B)
-                                          : (isDark
-                                                ? Colors.white.withOpacity(0.2)
-                                                : Colors.grey.shade300),
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: isActive
+                                            ? const Color(0xFFFFD00B)
+                                            : (isDark
+                                                  ? Colors.white.withOpacity(0.2)
+                                                  : Colors.grey.shade300),
+                                      ),
                                     ),
-                                  ),
-                                  child: Row(
+                                    child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       if (cat['dot'] == true) ...[
@@ -331,7 +374,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                       Text(
                                         cat['label'] as String,
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: categoryFontSize,
                                           fontWeight: FontWeight.w500,
                                           color: isActive
                                               ? Colors.black
@@ -346,15 +389,16 @@ class _EventsScreenState extends State<EventsScreen> {
                               ),
                             );
                           }),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: sectionSpacing),
                     // Calendar Card
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: calendarOuterPadding),
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(calendarPadding),
                         decoration: BoxDecoration(
                           color: isDark
                               ? const Color(0xFF121212)
@@ -370,8 +414,8 @@ class _EventsScreenState extends State<EventsScreen> {
                           children: [
                             // Month Navigation
                             Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isSmallScreen ? 0.0 : 8.0,
                               ),
                               child: Row(
                                 mainAxisAlignment:
@@ -380,17 +424,19 @@ class _EventsScreenState extends State<EventsScreen> {
                                   IconButton(
                                     icon: Icon(
                                       Icons.chevron_left,
-                                      size: 28,
+                                      size: isSmallScreen ? 20.0 : 28.0,
                                       color: isDark
                                           ? Colors.white
                                           : Colors.black,
                                     ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: BoxConstraints(),
                                     onPressed: () => _changeMonth(-1),
                                   ),
                                   Text(
                                     '${_monthNames[_currentDate.month - 1]} ${_currentDate.year}',
                                     style: TextStyle(
-                                      fontSize: 20,
+                                      fontSize: monthFontSize,
                                       fontWeight: FontWeight.w500,
                                       color: isDark
                                           ? Colors.white
@@ -400,105 +446,115 @@ class _EventsScreenState extends State<EventsScreen> {
                                   IconButton(
                                     icon: Icon(
                                       Icons.chevron_right,
-                                      size: 28,
+                                      size: isSmallScreen ? 20.0 : 28.0,
                                       color: isDark
                                           ? Colors.white
                                           : Colors.black,
                                     ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: BoxConstraints(),
                                     onPressed: () => _changeMonth(1),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: isSmallScreen ? 8.0 : 16.0),
                             // Week Days
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: _weekDays.map((day) {
-                                return SizedBox(
-                                  width: 40,
-                                  child: Center(
-                                    child: Text(
-                                      day,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade400,
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final availableWidth = constraints.maxWidth;
+                                final cellWidth = availableWidth / 7;
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: _weekDays.map((day) {
+                                    return SizedBox(
+                                      width: cellWidth,
+                                      child: Center(
+                                        child: Text(
+                                          day,
+                                          style: TextStyle(
+                                            fontSize: isSmallScreen ? 10.0 : 12.0,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.grey.shade400,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  }).toList(),
                                 );
-                              }).toList(),
+                              },
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: calendarSpacing),
                             // Calendar Grid
-                            Wrap(
-                              children: _getCalendarDays().map((date) {
-                                if (date == null) {
-                                  return SizedBox(
-                                    width:
-                                        MediaQuery.of(context).size.width / 7,
-                                    height:
-                                        MediaQuery.of(context).size.width / 7,
-                                  );
-                                }
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final availableWidth = constraints.maxWidth;
+                                final cellSize = availableWidth / 7;
+                                return Wrap(
+                                  children: _getCalendarDays().map((date) {
+                                    if (date == null) {
+                                      return SizedBox(
+                                        width: cellSize,
+                                        height: cellSize,
+                                      );
+                                    }
 
-                                final isSelected =
-                                    _selectedDate.year == date.year &&
-                                    _selectedDate.month == date.month &&
-                                    _selectedDate.day == date.day;
-                                final eventColors = _getEventColorsForDate(
-                                  date,
-                                  events,
-                                );
+                                    final isSelected =
+                                        _selectedDate.year == date.year &&
+                                        _selectedDate.month == date.month &&
+                                        _selectedDate.day == date.day;
+                                    final eventColors = _getEventColorsForDate(
+                                      date,
+                                      events,
+                                    );
 
-                                return SizedBox(
-                                  width: MediaQuery.of(context).size.width / 7,
-                                  height: MediaQuery.of(context).size.width / 7,
-                                  child: Center(
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(
-                                              () => _selectedDate = date,
-                                            );
-                                            // Save selected date to provider
-                                            final eventsProvider =
-                                                Provider.of<EventsProvider>(
-                                                  context,
-                                                  listen: false,
+                                    return SizedBox(
+                                      width: cellSize,
+                                      height: cellSize,
+                                      child: Center(
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                setState(
+                                                  () => _selectedDate = date,
                                                 );
-                                            eventsProvider.setLastSelectedDate(
-                                              date,
-                                            );
-                                          },
-                                          child: Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? const Color(0xFFFFD00B)
-                                                  : Colors.transparent,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                '${date.day}',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w500,
+                                                // Save selected date to provider
+                                                final eventsProvider =
+                                                    Provider.of<EventsProvider>(
+                                                      context,
+                                                      listen: false,
+                                                    );
+                                                eventsProvider.setLastSelectedDate(
+                                                  date,
+                                                );
+                                              },
+                                              child: Container(
+                                                width: calendarCellSize,
+                                                height: calendarCellSize,
+                                                decoration: BoxDecoration(
                                                   color: isSelected
-                                                      ? Colors.black
-                                                      : (isDark
-                                                            ? Colors.white
-                                                            : Colors.black),
+                                                      ? const Color(0xFFFFD00B)
+                                                      : Colors.transparent,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    '${date.day}',
+                                                    style: TextStyle(
+                                                      fontSize: calendarDayFontSize,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: isSelected
+                                                          ? Colors.black
+                                                          : (isDark
+                                                                ? Colors.white
+                                                                : Colors.black),
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                        ),
                                         // Event Indicators
                                         if (eventColors.isNotEmpty)
                                           Positioned(
@@ -525,11 +581,13 @@ class _EventsScreenState extends State<EventsScreen> {
                                               }).toList(),
                                             ),
                                           ),
-                                      ],
-                                    ),
-                                  ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
                                 );
-                              }).toList(),
+                              },
                             ),
                           ],
                         ),
@@ -538,24 +596,28 @@ class _EventsScreenState extends State<EventsScreen> {
                     const SizedBox(height: 32),
                     // Selected Date Header
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
-                          Text(
-                            '${_monthNames[_selectedDate.month - 1]} ${_selectedDate.day}',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? Colors.white : Colors.black,
+                          Flexible(
+                            child: Text(
+                              '${_monthNames[_selectedDate.month - 1]} ${_selectedDate.day}',
+                              style: TextStyle(
+                                fontSize: selectedDateFontSize,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          SizedBox(width: 8),
                           Text(
                             '${filteredEventsList.length} Event${filteredEventsList.length != 1 ? 's' : ''}',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: eventCountFontSize,
                               fontWeight: FontWeight.w500,
                               color: Colors.grey.shade500,
                               letterSpacing: 0.5,
