@@ -585,6 +585,8 @@ class _MapScreenState extends State<MapScreen> {
   /// Handle Apple Map annotation tap - update annotations directly without rebuilding map
   /// This approach swaps icons directly in the annotations Set, preserving camera position
   Future<void> _handleAppleMapAnnotationTap(Venue venue) async {
+    print(_selectedVenueId);
+    print('fire _handleAppleMapAnnotationTap');
     if (!mounted) return;
 
     final previousSelected = _selectedVenueId;
@@ -625,10 +627,11 @@ class _MapScreenState extends State<MapScreen> {
       // This ensures all annotations have the correct icons based on selection state
       if (mounted) {
         setState(() {
-          // Update selected venue ID first
+          // Update selected venue ID
           _selectedVenueId = venue.id;
+          print(_selectedVenueId);
 
-          // Update icon cache
+          // Update icon cache - ensure selected icon is cached BEFORE rebuilding annotations
           _appleMarkerIcons['${venue.id}_selected'] = selectedIcon;
           if (unselectedIcon != null && previousSelected != null) {
             _appleMarkerIcons['${previousSelected}_unselected'] =
@@ -636,7 +639,7 @@ class _MapScreenState extends State<MapScreen> {
           }
 
           // Rebuild all annotations with updated selection state
-          // This ensures the tapped marker gets selected icon and previous gets unselected
+          // This ensures the tapped marker gets selected icon (yellow) and previous gets unselected (white)
           _appleMapAnnotations = _buildAppleMapsAnnotations();
         });
       }
@@ -1071,7 +1074,13 @@ class _MapScreenState extends State<MapScreen> {
           // Clear selection when tapping on empty map area
           // (Marker taps are handled by annotation onTap handlers)
           if (mounted) {
-            setState(() => _selectedVenueId = null);
+            setState(() {
+              // Rebuild annotations to show all markers as unselected (white)
+              print('haha');
+              print(_selectedVenueId);
+              _selectedVenueId = null;
+              _appleMapAnnotations = _buildAppleMapsAnnotations();
+            });
           }
         },
       );
