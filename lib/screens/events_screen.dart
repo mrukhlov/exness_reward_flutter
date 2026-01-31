@@ -169,26 +169,26 @@ class _EventsScreenState extends State<EventsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Adaptive scaling factor based on screen height
     final isSmallScreen = screenHeight < 800;
-    
+
     // Adaptive spacing
-    final horizontalPadding = isSmallScreen 
-        ? 16.0 
+    final horizontalPadding = isSmallScreen
+        ? 16.0
         : math.max(20.0, math.min(24.0, screenWidth * 0.06));
-    final verticalSpacing = isSmallScreen 
-        ? 16.0 
+    final verticalSpacing = isSmallScreen
+        ? 16.0
         : math.max(20.0, math.min(32.0, screenHeight * 0.025));
-    final sectionSpacing = isSmallScreen 
-        ? 20.0 
+    final sectionSpacing = isSmallScreen
+        ? 20.0
         : math.max(24.0, math.min(32.0, screenHeight * 0.04));
-    
+
     // Adaptive font sizes
     final headerFontSize = isSmallScreen ? 20.0 : 24.0;
     final categoryFontSize = isSmallScreen ? 12.0 : 14.0;
     final categoryHeight = isSmallScreen ? 36.0 : 40.0;
-    final categoryPadding = isSmallScreen 
+    final categoryPadding = isSmallScreen
         ? EdgeInsets.symmetric(horizontal: 10, vertical: 8)
         : EdgeInsets.symmetric(horizontal: 20, vertical: 10);
     final categorySpacing = isSmallScreen ? 6.0 : 12.0;
@@ -206,7 +206,7 @@ class _EventsScreenState extends State<EventsScreen> {
     final eventDateDayFontSize = isSmallScreen ? 20.0 : 24.0;
     final eventDateMonthFontSize = isSmallScreen ? 10.0 : 12.0;
     final eventTimeFontSize = isSmallScreen ? 11.0 : 12.0;
-    
+
     return Consumer<EventsProvider>(
       builder: (context, eventsProvider, _) {
         final events = eventsProvider.getEventsForMonth(_currentDate);
@@ -323,7 +323,9 @@ class _EventsScreenState extends State<EventsScreen> {
                     ),
                     // Categories
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
@@ -337,8 +339,8 @@ class _EventsScreenState extends State<EventsScreen> {
                                 child: GestureDetector(
                                   onTap: () {
                                     setState(
-                                      () =>
-                                          _selectedCategory = cat['id'] as String,
+                                      () => _selectedCategory =
+                                          cat['id'] as String,
                                     );
                                   },
                                   child: Container(
@@ -353,42 +355,44 @@ class _EventsScreenState extends State<EventsScreen> {
                                         color: isActive
                                             ? const Color(0xFFFFD00B)
                                             : (isDark
-                                                  ? Colors.white.withOpacity(0.2)
+                                                  ? Colors.white.withOpacity(
+                                                      0.2,
+                                                    )
                                                   : Colors.grey.shade300),
                                       ),
                                     ),
                                     child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (cat['dot'] == true) ...[
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: Color(cat['color'] as int),
-                                            shape: BoxShape.circle,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (cat['dot'] == true) ...[
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: Color(cat['color'] as int),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                        ],
+                                        Text(
+                                          cat['label'] as String,
+                                          style: TextStyle(
+                                            fontSize: categoryFontSize,
+                                            fontWeight: FontWeight.w500,
+                                            color: isActive
+                                                ? Colors.black
+                                                : (isDark
+                                                      ? Colors.white
+                                                      : Colors.grey.shade600),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
                                       ],
-                                      Text(
-                                        cat['label'] as String,
-                                        style: TextStyle(
-                                          fontSize: categoryFontSize,
-                                          fontWeight: FontWeight.w500,
-                                          color: isActive
-                                              ? Colors.black
-                                              : (isDark
-                                                    ? Colors.white
-                                                    : Colors.grey.shade600),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
+                              );
+                            }),
                           ],
                         ),
                       ),
@@ -396,207 +400,237 @@ class _EventsScreenState extends State<EventsScreen> {
                     SizedBox(height: sectionSpacing),
                     // Calendar Card
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: calendarOuterPadding),
-                      child: Container(
-                        padding: EdgeInsets.all(calendarPadding),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF121212)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: calendarOuterPadding,
+                      ),
+                      child: GestureDetector(
+                        onHorizontalDragEnd: (details) {
+                          // Swipe left (negative velocity) = next month
+                          // Swipe right (positive velocity) = previous month
+                          if (details.primaryVelocity != null) {
+                            if (details.primaryVelocity! < -500) {
+                              // Swipe left - next month
+                              _changeMonth(1);
+                            } else if (details.primaryVelocity! > 500) {
+                              // Swipe right - previous month
+                              _changeMonth(-1);
+                            }
+                          }
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(calendarPadding),
+                          decoration: BoxDecoration(
                             color: isDark
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.grey.shade200,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            // Month Navigation
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isSmallScreen ? 0.0 : 8.0,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.chevron_left,
-                                      size: isSmallScreen ? 20.0 : 28.0,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: BoxConstraints(),
-                                    onPressed: () => _changeMonth(-1),
-                                  ),
-                                  Text(
-                                    '${_monthNames[_currentDate.month - 1]} ${_currentDate.year}',
-                                    style: TextStyle(
-                                      fontSize: monthFontSize,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.chevron_right,
-                                      size: isSmallScreen ? 20.0 : 28.0,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: BoxConstraints(),
-                                    onPressed: () => _changeMonth(1),
-                                  ),
-                                ],
-                              ),
+                                ? const Color(0xFF121212)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.grey.shade200,
                             ),
-                            SizedBox(height: isSmallScreen ? 8.0 : 16.0),
-                            // Week Days
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final availableWidth = constraints.maxWidth;
-                                final cellWidth = availableWidth / 7;
-                                return Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: _weekDays.map((day) {
-                                    return SizedBox(
-                                      width: cellWidth,
-                                      child: Center(
-                                        child: Text(
-                                          day,
-                                          style: TextStyle(
-                                            fontSize: isSmallScreen ? 10.0 : 12.0,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.grey.shade400,
+                          ),
+                          child: Column(
+                            children: [
+                              // Month Navigation
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isSmallScreen ? 0.0 : 8.0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.chevron_left,
+                                        size: isSmallScreen ? 20.0 : 28.0,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: BoxConstraints(),
+                                      onPressed: () => _changeMonth(-1),
+                                    ),
+                                    Text(
+                                      '${_monthNames[_currentDate.month - 1]} ${_currentDate.year}',
+                                      style: TextStyle(
+                                        fontSize: monthFontSize,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.chevron_right,
+                                        size: isSmallScreen ? 20.0 : 28.0,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: BoxConstraints(),
+                                      onPressed: () => _changeMonth(1),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: isSmallScreen ? 8.0 : 16.0),
+                              // Week Days
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final availableWidth = constraints.maxWidth;
+                                  final cellWidth = availableWidth / 7;
+                                  return Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: _weekDays.map((day) {
+                                      return SizedBox(
+                                        width: cellWidth,
+                                        child: Center(
+                                          child: Text(
+                                            day,
+                                            style: TextStyle(
+                                              fontSize: isSmallScreen
+                                                  ? 10.0
+                                                  : 12.0,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey.shade400,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
-                            SizedBox(height: calendarSpacing),
-                            // Calendar Grid
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final availableWidth = constraints.maxWidth;
-                                final cellSize = availableWidth / 7;
-                                return Wrap(
-                                  children: _getCalendarDays().map((date) {
-                                    if (date == null) {
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              ),
+                              SizedBox(height: calendarSpacing),
+                              // Calendar Grid
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final availableWidth = constraints.maxWidth;
+                                  final cellSize = availableWidth / 7;
+                                  return Wrap(
+                                    children: _getCalendarDays().map((date) {
+                                      if (date == null) {
+                                        return SizedBox(
+                                          width: cellSize,
+                                          height: cellSize,
+                                        );
+                                      }
+
+                                      final isSelected =
+                                          _selectedDate.year == date.year &&
+                                          _selectedDate.month == date.month &&
+                                          _selectedDate.day == date.day;
+                                      final eventColors =
+                                          _getEventColorsForDate(date, events);
+
                                       return SizedBox(
                                         width: cellSize,
                                         height: cellSize,
-                                      );
-                                    }
-
-                                    final isSelected =
-                                        _selectedDate.year == date.year &&
-                                        _selectedDate.month == date.month &&
-                                        _selectedDate.day == date.day;
-                                    final eventColors = _getEventColorsForDate(
-                                      date,
-                                      events,
-                                    );
-
-                                    return SizedBox(
-                                      width: cellSize,
-                                      height: cellSize,
-                                      child: Center(
-                                        child: Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            GestureDetector(
-                                              onTap: () {
-                                                setState(
-                                                  () => _selectedDate = date,
-                                                );
-                                                // Save selected date to provider
-                                                final eventsProvider =
-                                                    Provider.of<EventsProvider>(
-                                                      context,
-                                                      listen: false,
-                                                    );
-                                                eventsProvider.setLastSelectedDate(
-                                                  date,
-                                                );
-                                              },
-                                              child: Container(
-                                                width: calendarCellSize,
-                                                height: calendarCellSize,
-                                                decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? const Color(0xFFFFD00B)
-                                                      : Colors.transparent,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    '${date.day}',
-                                                    style: TextStyle(
-                                                      fontSize: calendarDayFontSize,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: isSelected
-                                                          ? Colors.black
-                                                          : (isDark
-                                                                ? Colors.white
-                                                                : Colors.black),
+                                        child: Center(
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () {
+                                                  setState(
+                                                    () => _selectedDate = date,
+                                                  );
+                                                  // Save selected date to provider
+                                                  final eventsProvider =
+                                                      Provider.of<
+                                                        EventsProvider
+                                                      >(context, listen: false);
+                                                  eventsProvider
+                                                      .setLastSelectedDate(
+                                                        date,
+                                                      );
+                                                },
+                                                child: Container(
+                                                  width: calendarCellSize,
+                                                  height: calendarCellSize,
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? const Color(
+                                                            0xFFFFD00B,
+                                                          )
+                                                        : Colors.transparent,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      '${date.day}',
+                                                      style: TextStyle(
+                                                        fontSize:
+                                                            calendarDayFontSize,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: isSelected
+                                                            ? Colors.black
+                                                            : (isDark
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                        .black),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                        // Event Indicators
-                                        if (eventColors.isNotEmpty)
-                                          Positioned(
-                                            bottom: 4,
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: eventColors.map((
-                                                color,
-                                              ) {
-                                                return Container(
-                                                  width: 6,
-                                                  height: 6,
-                                                  margin:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 1,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: isSelected
-                                                        ? Colors.black
-                                                        : _parseColor(color),
-                                                    shape: BoxShape.circle,
+                                              // Event Indicators
+                                              if (eventColors.isNotEmpty)
+                                                Positioned(
+                                                  bottom: 4,
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: eventColors.map((
+                                                      color,
+                                                    ) {
+                                                      return Container(
+                                                        width: 6,
+                                                        height: 6,
+                                                        margin:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 1,
+                                                            ),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                              color: isSelected
+                                                                  ? Colors.black
+                                                                  : _parseColor(
+                                                                      color,
+                                                                    ),
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                            ),
+                                                      );
+                                                    }).toList(),
                                                   ),
-                                                );
-                                              }).toList(),
-                                            ),
+                                                ),
+                                            ],
                                           ),
-                                          ],
                                         ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
-                          ],
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: sectionSpacing),
                     // Selected Date Header
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.baseline,
