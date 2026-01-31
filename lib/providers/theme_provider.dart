@@ -5,7 +5,7 @@ class ThemeProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.light;
   bool _isDark = false;
   bool _useCustomMapStyle = true; // Default to custom style
-  bool _useAppleMaps = true; // Default to Apple Maps on iOS
+  bool _useAppleMaps = false; // Default to Google Maps on iOS
 
   ThemeMode get themeMode => _themeMode;
   bool get isDark => _isDark;
@@ -63,7 +63,7 @@ class ThemeProvider with ChangeNotifier {
   Future<void> _loadMapProvider() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _useAppleMaps = prefs.getBool('exness_map_provider_apple') ?? true;
+      _useAppleMaps = prefs.getBool('exness_map_provider_apple') ?? false;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading map provider: $e');

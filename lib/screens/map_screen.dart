@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlong;
-import 'package:apple_maps_flutter/apple_maps_flutter.dart' as apple_maps;
+// import 'package:apple_maps_flutter/apple_maps_flutter.dart' as apple_maps; // Commented out - using Google Maps as default
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -31,8 +31,8 @@ class _MapScreenState extends State<MapScreen> {
   final Completer<gmaps.GoogleMapController> _mapController =
       Completer<gmaps.GoogleMapController>();
   final MapController _flutterMapController = MapController();
-  final Completer<apple_maps.AppleMapController> _appleMapController =
-      Completer<apple_maps.AppleMapController>();
+  // final Completer<apple_maps.AppleMapController> _appleMapController =
+  //     Completer<apple_maps.AppleMapController>(); // Commented out - using Google Maps
 
   String _activeCategory = 'All';
   String _searchQuery = '';
@@ -41,9 +41,8 @@ class _MapScreenState extends State<MapScreen> {
   final TextEditingController _searchController = TextEditingController();
   // Local cache mapping venue ID + selection state to icon (populated from global cache)
   final Map<String, gmaps.BitmapDescriptor> _markerIcons = {};
-  final Map<String, apple_maps.BitmapDescriptor> _appleMarkerIcons = {};
-  apple_maps.BitmapDescriptor?
-  _blueUserMarkerIcon; // Cache for blue user location marker
+  // final Map<String, apple_maps.BitmapDescriptor> _appleMarkerIcons = {}; // Commented out - using Google Maps
+  // apple_maps.BitmapDescriptor? _blueUserMarkerIcon; // Cache for blue user location marker // Commented out - using Google Maps
   bool _markersReady = false;
   bool _showUserLocation =
       false; // Track if user location marker should be shown
@@ -51,7 +50,7 @@ class _MapScreenState extends State<MapScreen> {
   double? _currentLat;
   double? _currentLng;
   bool _themeListenerAdded = false; // Track if ThemeProvider listener is added
-  int _appleMapRebuildKey = 0; // Counter to force Apple Map rebuilds
+  // int _appleMapRebuildKey = 0; // Counter to force Apple Map rebuilds // Commented out - using Google Maps
   latlong.LatLng _currentCenter = const latlong.LatLng(34.678, 33.043);
 
   static const gmaps.CameraPosition _initialPosition = gmaps.CameraPosition(
@@ -59,11 +58,11 @@ class _MapScreenState extends State<MapScreen> {
     zoom: 13,
   );
 
-  static const apple_maps.CameraPosition _initialApplePosition =
-      apple_maps.CameraPosition(
-        target: apple_maps.LatLng(34.678, 33.043),
-        zoom: 13,
-      );
+  // static const apple_maps.CameraPosition _initialApplePosition = // Commented out - using Google Maps
+  //     apple_maps.CameraPosition( // Commented out - using Google Maps
+  //       target: apple_maps.LatLng(34.678, 33.043), // Commented out - using Google Maps
+  //       zoom: 13, // Commented out - using Google Maps
+  //     ); // Commented out - using Google Maps
 
   @override
   void initState() {
@@ -125,7 +124,7 @@ class _MapScreenState extends State<MapScreen> {
           // Increment rebuild key to force Apple Map widget rebuild
           setState(() {
             _markersReady = false;
-            _appleMapRebuildKey++;
+            // _appleMapRebuildKey++; // Commented out - using Google Maps
           });
           // Reload icons for the new provider
           _loadMarkerIcons(forceReload: true);
@@ -150,63 +149,84 @@ class _MapScreenState extends State<MapScreen> {
 
     final venues = venuesProvider.venues;
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps;
+    // final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps; // Commented out - using Google Maps
 
     try {
       // Clear icon caches when switching providers or forcing reload
       if (forceReload) {
-        if (useAppleMaps) {
-          _markerIcons.clear(); // Clear Google Maps icons
-        } else {
-          _appleMarkerIcons.clear(); // Clear Apple Maps icons
-        }
+        // if (useAppleMaps) {
+        //   _markerIcons.clear(); // Clear Google Maps icons
+        // } else {
+        //   _appleMarkerIcons.clear(); // Clear Apple Maps icons
+        // } // Commented out - using Google Maps
+        _markerIcons.clear(); // Clear Google Maps icons
       }
 
-      if (useAppleMaps) {
-        // Load Apple Maps marker icons from cache
-        // Always reload when forceReload is true to ensure fresh icons
-        for (final venue in venues) {
-          final category = venue.category.isNotEmpty
-              ? venue.category
-              : venue.type;
-          final selectedKey = '${venue.id}_selected';
-          final unselectedKey = '${venue.id}_unselected';
+      // if (useAppleMaps) {
+      //   // Load Apple Maps marker icons from cache
+      //   // Always reload when forceReload is true to ensure fresh icons
+      //   for (final venue in venues) {
+      //     final category = venue.category.isNotEmpty
+      //         ? venue.category
+      //         : venue.type;
+      //     final selectedKey = '${venue.id}_selected';
+      //     final unselectedKey = '${venue.id}_unselected';
 
-          // Always reload when forcing reload or if icon doesn't exist
-          _appleMarkerIcons[selectedKey] = await _markerCache
-              .getAppleMarkerIcon(category, true);
-          _appleMarkerIcons[unselectedKey] = await _markerCache
-              .getAppleMarkerIcon(category, false);
-        }
-      } else {
-        // Load Google Maps marker icons from cache
-        // Always reload when forceReload is true to ensure fresh icons
-        for (final venue in venues) {
-          final category = venue.category.isNotEmpty
-              ? venue.category
-              : venue.type;
-          final selectedKey = '${venue.id}_selected';
-          final unselectedKey = '${venue.id}_unselected';
+      //     // Always reload when forcing reload or if icon doesn't exist
+      //     _appleMarkerIcons[selectedKey] = await _markerCache
+      //         .getAppleMarkerIcon(category, true);
+      //     _appleMarkerIcons[unselectedKey] = await _markerCache
+      //         .getAppleMarkerIcon(category, false);
+      //   }
+      // } else {
+      //   // Load Google Maps marker icons from cache
+      //   // Always reload when forceReload is true to ensure fresh icons
+      //   for (final venue in venues) {
+      //     final category = venue.category.isNotEmpty
+      //         ? venue.category
+      //         : venue.type;
+      //     final selectedKey = '${venue.id}_selected';
+      //     final unselectedKey = '${venue.id}_unselected';
 
-          // Always reload when forcing reload or if icon doesn't exist
-          _markerIcons[selectedKey] = await _markerCache.getGoogleMarkerIcon(
-            category,
-            true,
-          );
-          _markerIcons[unselectedKey] = await _markerCache.getGoogleMarkerIcon(
-            category,
-            false,
-          );
-        }
+      //     // Always reload when forcing reload or if icon doesn't exist
+      //     _markerIcons[selectedKey] = await _markerCache.getGoogleMarkerIcon(
+      //       category,
+      //       true,
+      //     );
+      //     _markerIcons[unselectedKey] = await _markerCache.getGoogleMarkerIcon(
+      //       category,
+      //       false,
+      //     );
+      //   }
+      // } // Commented out - using Google Maps
+
+      // Load Google Maps marker icons from cache
+      // Always reload when forceReload is true to ensure fresh icons
+      for (final venue in venues) {
+        final category = venue.category.isNotEmpty
+            ? venue.category
+            : venue.type;
+        final selectedKey = '${venue.id}_selected';
+        final unselectedKey = '${venue.id}_unselected';
+
+        // Always reload when forcing reload or if icon doesn't exist
+        _markerIcons[selectedKey] = await _markerCache.getGoogleMarkerIcon(
+          category,
+          true,
+        );
+        _markerIcons[unselectedKey] = await _markerCache.getGoogleMarkerIcon(
+          category,
+          false,
+        );
       }
 
       if (mounted) {
         setState(() {
           _markersReady = true;
           // Increment rebuild key to force Apple Map rebuild with new icons
-          if (useAppleMaps) {
-            _appleMapRebuildKey++;
-          }
+          // if (useAppleMaps) {
+          //   _appleMapRebuildKey++;
+          // } // Commented out - using Google Maps
         });
         // Try to animate to selected venue after markers are ready
         _tryAnimateToSelectedVenue();
@@ -324,63 +344,80 @@ class _MapScreenState extends State<MapScreen> {
     final key = '${venueId}_${isSelected ? 'selected' : 'unselected'}';
 
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps;
-    if (useAppleMaps) {
-      // Get icon from cache (already preloaded)
-      final icon = await _markerCache.getAppleMarkerIcon(category, isSelected);
-      if (mounted) {
-        setState(() {
-          _appleMarkerIcons[key] = icon;
-        });
-      }
-    } else if (!Platform.isIOS) {
-      // Get icon from cache (already preloaded)
-      final icon = await _markerCache.getGoogleMarkerIcon(category, isSelected);
-      if (mounted) {
-        setState(() {
-          _markerIcons[key] = icon;
-        });
-      }
+    // final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps; // Commented out - using Google Maps
+    // if (useAppleMaps) {
+    //   // Get icon from cache (already preloaded)
+    //   final icon = await _markerCache.getAppleMarkerIcon(category, isSelected);
+    //   if (mounted) {
+    //     setState(() {
+    //       _appleMarkerIcons[key] = icon;
+    //     });
+    //   }
+    // } else if (!Platform.isIOS) {
+    //   // Get icon from cache (already preloaded)
+    //   final icon = await _markerCache.getGoogleMarkerIcon(category, isSelected);
+    //   if (mounted) {
+    //     setState(() {
+    //       _markerIcons[key] = icon;
+    //     });
+    //   }
+    // } // Commented out - using Google Maps
+
+    // Get icon from cache (already preloaded) - Google Maps
+    final icon = await _markerCache.getGoogleMarkerIcon(category, isSelected);
+    if (mounted) {
+      setState(() {
+        _markerIcons[key] = icon;
+      });
     }
   }
 
   Future<void> _animateToVenue(Venue venue) async {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps;
+    // final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    // final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps; // Commented out - using Google Maps
 
-    if (Platform.isIOS) {
-      if (useAppleMaps) {
-        // For native Apple Maps - only move camera, don't change zoom
-        final controller = await _appleMapController.future;
-        // Use newLatLng to only change position without affecting zoom
-        await controller.animateCamera(
-          apple_maps.CameraUpdate.newLatLng(
-            apple_maps.LatLng(venue.lat, venue.lng),
-          ),
-        );
-        // Update current position
-        _currentLat = venue.lat;
-        _currentLng = venue.lng;
-      } else {
-        // For Google Maps on iOS - use Google Maps controller
-        final controller = await _mapController.future;
-        await controller.animateCamera(
-          gmaps.CameraUpdate.newLatLng(gmaps.LatLng(venue.lat, venue.lng)),
-        );
-        // Update current position
-        _currentLat = venue.lat;
-        _currentLng = venue.lng;
-      }
-    } else {
-      // For Google Maps - only move camera, don't change zoom
-      final controller = await _mapController.future;
-      await controller.animateCamera(
-        gmaps.CameraUpdate.newLatLng(gmaps.LatLng(venue.lat, venue.lng)),
-      );
-      // Update current position
-      _currentLat = venue.lat;
-      _currentLng = venue.lng;
-    }
+    // if (Platform.isIOS) {
+    //   if (useAppleMaps) {
+    //     // For native Apple Maps - only move camera, don't change zoom
+    //     final controller = await _appleMapController.future;
+    //     // Use newLatLng to only change position without affecting zoom
+    //     await controller.animateCamera(
+    //       apple_maps.CameraUpdate.newLatLng(
+    //         apple_maps.LatLng(venue.lat, venue.lng),
+    //       ),
+    //     );
+    //     // Update current position
+    //     _currentLat = venue.lat;
+    //     _currentLng = venue.lng;
+    //   } else {
+    //     // For Google Maps on iOS - use Google Maps controller
+    //     final controller = await _mapController.future;
+    //     await controller.animateCamera(
+    //       gmaps.CameraUpdate.newLatLng(gmaps.LatLng(venue.lat, venue.lng)),
+    //     );
+    //     // Update current position
+    //     _currentLat = venue.lat;
+    //     _currentLng = venue.lng;
+    //   }
+    // } else {
+    //   // For Google Maps - only move camera, don't change zoom
+    //   final controller = await _mapController.future;
+    //   await controller.animateCamera(
+    //     gmaps.CameraUpdate.newLatLng(gmaps.LatLng(venue.lat, venue.lng)),
+    //   );
+    //   // Update current position
+    //   _currentLat = venue.lat;
+    //   _currentLng = venue.lng;
+    // } // Commented out - using Google Maps
+
+    // For Google Maps - only move camera, don't change zoom
+    final controller = await _mapController.future;
+    await controller.animateCamera(
+      gmaps.CameraUpdate.newLatLng(gmaps.LatLng(venue.lat, venue.lng)),
+    );
+    // Update current position
+    _currentLat = venue.lat;
+    _currentLng = venue.lng;
   }
 
   String _getMapStyle(bool isDark) {
@@ -592,194 +629,194 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildAppleMap() {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    if (themeProvider.useAppleMaps) {
-      // Use native Apple Maps
-      // Note: Apple Maps doesn't support custom styling like Google Maps
-      // It only supports mapType (standard, satellite, hybrid)
-      // Custom map style setting only affects Google Maps
-      // Use rebuild key to force complete widget rebuild when icons are loaded
+  // Widget _buildAppleMap() { // Commented out - using Google Maps
+  //   final themeProvider = Provider.of<ThemeProvider>(context);
+  //   if (themeProvider.useAppleMaps) {
+  //     // Use native Apple Maps
+  //     // Note: Apple Maps doesn't support custom styling like Google Maps
+  //     // It only supports mapType (standard, satellite, hybrid)
+  //     // Custom map style setting only affects Google Maps
+  //     // Use rebuild key to force complete widget rebuild when icons are loaded
 
-      // Use current position if available, otherwise use initial position
-      final cameraPosition =
-          (_currentLat != null && _currentLng != null && _currentZoom != null)
-          ? apple_maps.CameraPosition(
-              target: apple_maps.LatLng(_currentLat!, _currentLng!),
-              zoom: _currentZoom!,
-            )
-          : _initialApplePosition;
+  //     // Use current position if available, otherwise use initial position
+  //     final cameraPosition =
+  //         (_currentLat != null && _currentLng != null && _currentZoom != null)
+  //         ? apple_maps.CameraPosition(
+  //             target: apple_maps.LatLng(_currentLat!, _currentLng!),
+  //             zoom: _currentZoom!,
+  //           )
+  //         : _initialApplePosition;
 
-      return apple_maps.AppleMap(
-        key: ValueKey(
-          'apple_map_${themeProvider.useAppleMaps}_$_markersReady}_$_appleMapRebuildKey',
-        ),
-        initialCameraPosition: cameraPosition,
-        annotations: _buildAppleMapsAnnotations(),
-        onMapCreated: (apple_maps.AppleMapController controller) async {
-          if (!_appleMapController.isCompleted) {
-            _appleMapController.complete(controller);
-            // If we have a current position, animate to it to preserve camera position
-            if (_currentLat != null &&
-                _currentLng != null &&
-                _currentZoom != null) {
-              await controller.animateCamera(
-                apple_maps.CameraUpdate.newCameraPosition(
-                  apple_maps.CameraPosition(
-                    target: apple_maps.LatLng(_currentLat!, _currentLng!),
-                    zoom: _currentZoom!,
-                  ),
-                ),
-              );
-            } else {
-              _currentZoom = _initialApplePosition.zoom;
-              _currentLat = _initialApplePosition.target.latitude;
-              _currentLng = _initialApplePosition.target.longitude;
-            }
-            print('✅ Native Apple Map created successfully');
-          }
-        },
-        onTap: (apple_maps.LatLng position) async {
-          // Find nearest venue to tapped position
-          Venue? nearestVenue;
-          double minDistance = double.infinity;
+  //     return apple_maps.AppleMap(
+  //       key: ValueKey(
+  //         'apple_map_${themeProvider.useAppleMaps}_$_markersReady}_$_appleMapRebuildKey',
+  //       ),
+  //       initialCameraPosition: cameraPosition,
+  //       annotations: _buildAppleMapsAnnotations(),
+  //       onMapCreated: (apple_maps.AppleMapController controller) async {
+  //         if (!_appleMapController.isCompleted) {
+  //           _appleMapController.complete(controller);
+  //           // If we have a current position, animate to it to preserve camera position
+  //           if (_currentLat != null &&
+  //               _currentLng != null &&
+  //               _currentZoom != null) {
+  //             await controller.animateCamera(
+  //               apple_maps.CameraUpdate.newCameraPosition(
+  //                 apple_maps.CameraPosition(
+  //                   target: apple_maps.LatLng(_currentLat!, _currentLng!),
+  //                   zoom: _currentZoom!,
+  //                 ),
+  //               ),
+  //             );
+  //           } else {
+  //             _currentZoom = _initialApplePosition.zoom;
+  //             _currentLat = _initialApplePosition.target.latitude;
+  //             _currentLng = _initialApplePosition.target.longitude;
+  //           }
+  //           print('✅ Native Apple Map created successfully');
+  //         }
+  //       },
+  //       onTap: (apple_maps.LatLng position) async {
+  //         // Find nearest venue to tapped position
+  //         Venue? nearestVenue;
+  //         double minDistance = double.infinity;
 
-          for (final venue in _filteredVenues) {
-            final distance =
-                ((venue.lat - position.latitude).abs() +
-                (venue.lng - position.longitude).abs());
-            if (distance < minDistance) {
-              minDistance = distance;
-              nearestVenue = venue;
-            }
-          }
+  //         for (final venue in _filteredVenues) {
+  //           final distance =
+  //               ((venue.lat - position.latitude).abs() +
+  //               (venue.lng - position.longitude).abs());
+  //           if (distance < minDistance) {
+  //             minDistance = distance;
+  //             nearestVenue = venue;
+  //           }
+  //         }
 
-          if (nearestVenue != null && minDistance < 0.01) {
-            // Close enough to select venue
-            final previousSelected = _selectedVenueId;
-            final venue = nearestVenue; // Local variable for null safety
-            final category = venue.category.isNotEmpty
-                ? venue.category
-                : venue.type;
+  //         if (nearestVenue != null && minDistance < 0.01) {
+  //           // Close enough to select venue
+  //           final previousSelected = _selectedVenueId;
+  //           final venue = nearestVenue; // Local variable for null safety
+  //           final category = venue.category.isNotEmpty
+  //               ? venue.category
+  //               : venue.type;
 
-            if (mounted) {
-              setState(() {
-                _selectedVenueId = venue.id;
-              });
-            }
+  //           if (mounted) {
+  //             setState(() {
+  //               _selectedVenueId = venue.id;
+  //             });
+  //           }
 
-            // Update icons for both previously selected and newly selected markers
-            if (previousSelected != null && previousSelected != venue.id) {
-              final venuesProvider = Provider.of<VenuesProvider>(
-                context,
-                listen: false,
-              );
-              final prevVenue = venuesProvider.venues.firstWhere(
-                (v) => v.id == previousSelected,
-              );
-              final prevCategory = prevVenue.category.isNotEmpty
-                  ? prevVenue.category
-                  : prevVenue.type;
-              _updateMarkerIcon(previousSelected, prevCategory, false);
-            }
-            _updateMarkerIcon(venue.id, category, true);
+  //           // Update icons for both previously selected and newly selected markers
+  //           if (previousSelected != null && previousSelected != venue.id) {
+  //             final venuesProvider = Provider.of<VenuesProvider>(
+  //               context,
+  //               listen: false,
+  //             );
+  //             final prevVenue = venuesProvider.venues.firstWhere(
+  //               (v) => v.id == previousSelected,
+  //             );
+  //             final prevCategory = prevVenue.category.isNotEmpty
+  //                 ? prevVenue.category
+  //                 : prevVenue.type;
+  //             _updateMarkerIcon(previousSelected, prevCategory, false);
+  //           }
+  //           _updateMarkerIcon(venue.id, category, true);
 
-            _animateToVenue(venue);
-          } else {
-            if (mounted) {
-              setState(() => _selectedVenueId = null);
-            }
-          }
-        },
-      );
-    } else {
-      // Use OpenStreetMap (flutter_map) as fallback
-      final zoom = _currentZoom ?? 13.0;
-      return FlutterMap(
-        mapController: _flutterMapController,
-        options: MapOptions(
-          initialCenter: _currentCenter,
-          initialZoom: zoom,
-          onTap: (tapPosition, point) {
-            if (mounted) {
-              setState(() => _selectedVenueId = null);
-            }
-          },
-          onMapEvent: (event) {
-            if (event is MapEventMove) {
-              _currentZoom = _flutterMapController.camera.zoom;
-              _currentCenter = _flutterMapController.camera.center;
-            }
-          },
-        ),
-        children: [
-          // OpenStreetMap tiles
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.exness.reward_flutter',
-            maxZoom: 19,
-            minZoom: 3,
-          ),
-          // Markers
-          MarkerLayer(markers: _buildFlutterMapMarkers()),
-        ],
-      );
-    }
-  }
+  //           _animateToVenue(venue);
+  //         } else {
+  //           if (mounted) {
+  //             setState(() => _selectedVenueId = null);
+  //           }
+  //         }
+  //       },
+  //     );
+  //   } else {
+  //     // Use OpenStreetMap (flutter_map) as fallback
+  //     final zoom = _currentZoom ?? 13.0;
+  //     return FlutterMap(
+  //       mapController: _flutterMapController,
+  //       options: MapOptions(
+  //         initialCenter: _currentCenter,
+  //         initialZoom: zoom,
+  //         onTap: (tapPosition, point) {
+  //           if (mounted) {
+  //             setState(() => _selectedVenueId = null);
+  //           }
+  //         },
+  //         onMapEvent: (event) {
+  //           if (event is MapEventMove) {
+  //             _currentZoom = _flutterMapController.camera.zoom;
+  //             _currentCenter = _flutterMapController.camera.center;
+  //           }
+  //         },
+  //       ),
+  //       children: [
+  //         // OpenStreetMap tiles
+  //         TileLayer(
+  //           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  //           userAgentPackageName: 'com.exness.reward_flutter',
+  //           maxZoom: 19,
+  //           minZoom: 3,
+  //         ),
+  //         // Markers
+  //         MarkerLayer(markers: _buildFlutterMapMarkers()),
+  //       ],
+  //     );
+  //   }
+  // } // Commented out - using Google Maps
 
-  Set<apple_maps.Annotation> _buildAppleMapsAnnotations() {
-    final annotations = <apple_maps.Annotation>{};
+  // Set<apple_maps.Annotation> _buildAppleMapsAnnotations() { // Commented out - using Google Maps
+  //   final annotations = <apple_maps.Annotation>{};
 
-    // Add user location marker (blue circle like Google Maps)
-    final locationProvider = Provider.of<LocationProvider>(
-      context,
-      listen: false,
-    );
-    if (_showUserLocation &&
-        locationProvider.latitude != null &&
-        locationProvider.longitude != null) {
-      // Use blue circle marker (create if not cached)
-      final blueMarker =
-          _blueUserMarkerIcon ?? apple_maps.BitmapDescriptor.defaultAnnotation;
+  //   // Add user location marker (blue circle like Google Maps)
+  //   final locationProvider = Provider.of<LocationProvider>(
+  //     context,
+  //     listen: false,
+  //   );
+  //   if (_showUserLocation &&
+  //       locationProvider.latitude != null &&
+  //       locationProvider.longitude != null) {
+  //     // Use blue circle marker (create if not cached)
+  //     final blueMarker =
+  //         _blueUserMarkerIcon ?? apple_maps.BitmapDescriptor.defaultAnnotation;
 
-      annotations.add(
-        apple_maps.Annotation(
-          annotationId: apple_maps.AnnotationId('user_location'),
-          position: apple_maps.LatLng(
-            locationProvider.latitude!,
-            locationProvider.longitude!,
-          ),
-          icon: blueMarker,
-        ),
-      );
-    }
+  //     annotations.add(
+  //       apple_maps.Annotation(
+  //         annotationId: apple_maps.AnnotationId('user_location'),
+  //         position: apple_maps.LatLng(
+  //           locationProvider.latitude!,
+  //           locationProvider.longitude!,
+  //         ),
+  //         icon: blueMarker,
+  //       ),
+  //     );
+  //   }
 
-    if (!_markersReady || _filteredVenues.isEmpty) {
-      return annotations;
-    }
+  //   if (!_markersReady || _filteredVenues.isEmpty) {
+  //     return annotations;
+  //   }
 
-    // Add venue markers
-    final venueAnnotations = _filteredVenues.map((venue) {
-      final isSelected = _selectedVenueId == venue.id;
-      final iconKey = '${venue.id}_${isSelected ? 'selected' : 'unselected'}';
+  //   // Add venue markers
+  //   final venueAnnotations = _filteredVenues.map((venue) {
+  //     final isSelected = _selectedVenueId == venue.id;
+  //     final iconKey = '${venue.id}_${isSelected ? 'selected' : 'unselected'}';
 
-      // Get cached icon or create a default one
-      final icon = _appleMarkerIcons[iconKey];
+  //     // Get cached icon or create a default one
+  //     final icon = _appleMarkerIcons[iconKey];
 
-      // Create a simple default icon if custom icon not available
-      final markerIcon = icon ?? apple_maps.BitmapDescriptor.defaultAnnotation;
+  //     // Create a simple default icon if custom icon not available
+  //     final markerIcon = icon ?? apple_maps.BitmapDescriptor.defaultAnnotation;
 
-      // Build annotation with custom icon (no info window)
-      return apple_maps.Annotation(
-        annotationId: apple_maps.AnnotationId(venue.id),
-        position: apple_maps.LatLng(venue.lat, venue.lng),
-        icon: markerIcon,
-      );
-    }).toSet();
+  //     // Build annotation with custom icon (no info window)
+  //     return apple_maps.Annotation(
+  //       annotationId: apple_maps.AnnotationId(venue.id),
+  //       position: apple_maps.LatLng(venue.lat, venue.lng),
+  //       icon: markerIcon,
+  //     );
+  //   }).toSet();
 
-    annotations.addAll(venueAnnotations);
-    return annotations;
-  }
+  //   annotations.addAll(venueAnnotations);
+  //   return annotations;
+  // } // Commented out - using Google Maps
 
   List<Marker> _buildFlutterMapMarkers() {
     final markers = <Marker>[];
@@ -924,9 +961,10 @@ class _MapScreenState extends State<MapScreen> {
           Positioned.fill(
             child: Consumer<ThemeProvider>(
               builder: (context, themeProvider, _) {
-                final useAppleMaps =
-                    Platform.isIOS && themeProvider.useAppleMaps;
-                return useAppleMaps ? _buildAppleMap() : _buildGoogleMap();
+                // final useAppleMaps =
+                //     Platform.isIOS && themeProvider.useAppleMaps; // Commented out - using Google Maps
+                // return useAppleMaps ? _buildAppleMap() : _buildGoogleMap(); // Commented out - using Google Maps
+                return _buildGoogleMap(); // Always use Google Maps
               },
             ),
           ),
@@ -1101,9 +1139,9 @@ class _MapScreenState extends State<MapScreen> {
                 Consumer<ThemeProvider>(
                   builder: (context, themeProvider, _) {
                     // Only show theme toggle when using Google Maps AND custom map style is enabled
-                    if (Platform.isIOS && themeProvider.useAppleMaps) {
-                      return const SizedBox.shrink();
-                    }
+                    // if (Platform.isIOS && themeProvider.useAppleMaps) { // Commented out - using Google Maps
+                    //   return const SizedBox.shrink();
+                    // } // Commented out - using Google Maps
                     if (!themeProvider.useCustomMapStyle) {
                       return const SizedBox.shrink();
                     }
@@ -1146,59 +1184,60 @@ class _MapScreenState extends State<MapScreen> {
                   },
                 ),
                 // Map Provider Toggle (iOS only) - Above zoom in button
-                if (Platform.isIOS)
-                  Consumer<ThemeProvider>(
-                    builder: (context, themeProvider, _) {
-                      return Container(
-                        width: 48,
-                        height: 48,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1E1E1E).withOpacity(0.9)
-                              : Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.grey.shade200,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => themeProvider.toggleMapProvider(),
-                            borderRadius: BorderRadius.circular(24),
-                            child: themeProvider.useAppleMaps
-                                ? Icon(
-                                    Icons.apple,
-                                    size: 24,
-                                    color: isDark ? Colors.white : Colors.black,
-                                  )
-                                : Center(
-                                    child: Text(
-                                      'G',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: isDark
-                                            ? Colors.white
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                // Commented out - using Google Maps as default
+                // if (Platform.isIOS)
+                //   Consumer<ThemeProvider>(
+                //     builder: (context, themeProvider, _) {
+                //       return Container(
+                //         width: 48,
+                //         height: 48,
+                //         margin: const EdgeInsets.only(bottom: 12),
+                //         decoration: BoxDecoration(
+                //           color: isDark
+                //               ? const Color(0xFF1E1E1E).withOpacity(0.9)
+                //               : Colors.white.withOpacity(0.9),
+                //           shape: BoxShape.circle,
+                //           border: Border.all(
+                //             color: isDark
+                //                 ? Colors.white.withOpacity(0.1)
+                //                 : Colors.grey.shade200,
+                //           ),
+                //           boxShadow: [
+                //             BoxShadow(
+                //               color: Colors.black.withOpacity(0.2),
+                //               blurRadius: 4,
+                //               offset: const Offset(0, 2),
+                //             ),
+                //           ],
+                //         ),
+                //         child: Material(
+                //           color: Colors.transparent,
+                //           child: InkWell(
+                //             onTap: () => themeProvider.toggleMapProvider(),
+                //             borderRadius: BorderRadius.circular(24),
+                //             child: themeProvider.useAppleMaps
+                //                 ? Icon(
+                //                     Icons.apple,
+                //                     size: 24,
+                //                     color: isDark ? Colors.white : Colors.black,
+                //                   )
+                //                 : Center(
+                //                     child: Text(
+                //                       'G',
+                //                       style: TextStyle(
+                //                         fontSize: 20,
+                //                         fontWeight: FontWeight.bold,
+                //                         color: isDark
+                //                             ? Colors.white
+                //                             : Colors.black,
+                //                       ),
+                //                     ),
+                //                   ),
+                //           ),
+                //         ),
+                //       );
+                //     },
+                //   ),
                 // Zoom In
                 Container(
                   width: 48,
@@ -1306,81 +1345,99 @@ class _MapScreenState extends State<MapScreen> {
                       onTap: () async {
                         if (locationProvider.latitude != null &&
                             locationProvider.longitude != null) {
-                          final themeProvider = Provider.of<ThemeProvider>(
-                            context,
-                            listen: false,
-                          );
-                          final useAppleMaps =
-                              Platform.isIOS && themeProvider.useAppleMaps;
+                          // final themeProvider = Provider.of<ThemeProvider>(
+                          //   context,
+                          //   listen: false,
+                          // ); // Commented out - using Google Maps
+                          // final useAppleMaps =
+                          //     Platform.isIOS && themeProvider.useAppleMaps; // Commented out - using Google Maps
 
-                          if (Platform.isIOS) {
-                            if (useAppleMaps) {
-                              // Show user location marker for Apple Maps (blue circle)
-                              if (_blueUserMarkerIcon == null) {
-                                _blueUserMarkerIcon =
-                                    await createBlueUserLocationMarker();
-                              }
-                              if (mounted) {
-                                setState(() {
-                                  _showUserLocation = true;
-                                });
-                              }
+                          // if (Platform.isIOS) {
+                          //   if (useAppleMaps) {
+                          //     // Show user location marker for Apple Maps (blue circle)
+                          //     if (_blueUserMarkerIcon == null) {
+                          //       _blueUserMarkerIcon =
+                          //           await createBlueUserLocationMarker();
+                          //     }
+                          //     if (mounted) {
+                          //       setState(() {
+                          //         _showUserLocation = true;
+                          //       });
+                          //     }
 
-                              // Use native Apple Maps controller
-                              final controller =
-                                  await _appleMapController.future;
-                              await controller.animateCamera(
-                                apple_maps.CameraUpdate.newCameraPosition(
-                                  apple_maps.CameraPosition(
-                                    target: apple_maps.LatLng(
-                                      locationProvider.latitude!,
-                                      locationProvider.longitude!,
-                                    ),
-                                    zoom: 15,
-                                  ),
+                          //     // Use native Apple Maps controller
+                          //     final controller =
+                          //         await _appleMapController.future;
+                          //     await controller.animateCamera(
+                          //       apple_maps.CameraUpdate.newCameraPosition(
+                          //         apple_maps.CameraPosition(
+                          //           target: apple_maps.LatLng(
+                          //             locationProvider.latitude!,
+                          //             locationProvider.longitude!,
+                          //           ),
+                          //           zoom: 15,
+                          //         ),
+                          //       ),
+                          //     );
+                          //     // Update current position
+                          //     _currentLat = locationProvider.latitude;
+                          //     _currentLng = locationProvider.longitude;
+                          //     _currentZoom = 15;
+                          //   } else {
+                          //     // Use Google Maps controller on iOS
+                          //     final controller = await _mapController.future;
+                          //     await controller.animateCamera(
+                          //       gmaps.CameraUpdate.newCameraPosition(
+                          //         gmaps.CameraPosition(
+                          //           target: gmaps.LatLng(
+                          //             locationProvider.latitude!,
+                          //             locationProvider.longitude!,
+                          //           ),
+                          //           zoom: 15,
+                          //         ),
+                          //       ),
+                          //     );
+                          //     // Update current position
+                          //     _currentLat = locationProvider.latitude;
+                          //     _currentLng = locationProvider.longitude;
+                          //     _currentZoom = 15;
+                          //   }
+                          // } else {
+                          //   final controller = await _mapController.future;
+                          //   await controller.animateCamera(
+                          //     gmaps.CameraUpdate.newCameraPosition(
+                          //       gmaps.CameraPosition(
+                          //         target: gmaps.LatLng(
+                          //           locationProvider.latitude!,
+                          //           locationProvider.longitude!,
+                          //         ),
+                          //         zoom: 15,
+                          //       ),
+                          //     ),
+                          //   );
+                          //   // Update current position
+                          //   _currentLat = locationProvider.latitude;
+                          //   _currentLng = locationProvider.longitude;
+                          //   _currentZoom = 15;
+                          // } // Commented out - using Google Maps
+
+                          // Use Google Maps controller (always)
+                          final controller = await _mapController.future;
+                          await controller.animateCamera(
+                            gmaps.CameraUpdate.newCameraPosition(
+                              gmaps.CameraPosition(
+                                target: gmaps.LatLng(
+                                  locationProvider.latitude!,
+                                  locationProvider.longitude!,
                                 ),
-                              );
-                              // Update current position
-                              _currentLat = locationProvider.latitude;
-                              _currentLng = locationProvider.longitude;
-                              _currentZoom = 15;
-                            } else {
-                              // Use Google Maps controller on iOS
-                              final controller = await _mapController.future;
-                              await controller.animateCamera(
-                                gmaps.CameraUpdate.newCameraPosition(
-                                  gmaps.CameraPosition(
-                                    target: gmaps.LatLng(
-                                      locationProvider.latitude!,
-                                      locationProvider.longitude!,
-                                    ),
-                                    zoom: 15,
-                                  ),
-                                ),
-                              );
-                              // Update current position
-                              _currentLat = locationProvider.latitude;
-                              _currentLng = locationProvider.longitude;
-                              _currentZoom = 15;
-                            }
-                          } else {
-                            final controller = await _mapController.future;
-                            await controller.animateCamera(
-                              gmaps.CameraUpdate.newCameraPosition(
-                                gmaps.CameraPosition(
-                                  target: gmaps.LatLng(
-                                    locationProvider.latitude!,
-                                    locationProvider.longitude!,
-                                  ),
-                                  zoom: 15,
-                                ),
+                                zoom: 15,
                               ),
-                            );
-                            // Update current position
-                            _currentLat = locationProvider.latitude;
-                            _currentLng = locationProvider.longitude;
-                            _currentZoom = 15;
-                          }
+                            ),
+                          );
+                          // Update current position
+                          _currentLat = locationProvider.latitude;
+                          _currentLng = locationProvider.longitude;
+                          _currentZoom = 15;
                         }
                       },
                       borderRadius: BorderRadius.circular(24),
