@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlong;
@@ -44,7 +45,7 @@ class _MapScreenState extends State<MapScreen> {
   final Completer<gmaps.GoogleMapController> _mapController =
       Completer<gmaps.GoogleMapController>();
   final MapController _flutterMapController = MapController();
-  final Completer<apple_maps.AppleMapController> _appleMapController =
+  Completer<apple_maps.AppleMapController> _appleMapController =
       Completer<apple_maps.AppleMapController>();
 
   String _activeCategory = 'All';
@@ -70,6 +71,9 @@ class _MapScreenState extends State<MapScreen> {
   latlong.LatLng _currentCenter = const latlong.LatLng(34.678, 33.043);
   int _lastZoomLevel =
       0; // Track zoom level for marker scaling (rounded to avoid constant updates)
+  bool _appleMapControllerReady =
+      false; // Track if Apple Maps controller is ready
+  bool _isDisposing = false; // Track if widget is disposing
 
   // Clustering configuration
   static const double _clusterZoomThreshold =
@@ -87,6 +91,43 @@ class _MapScreenState extends State<MapScreen> {
         target: apple_maps.LatLng(34.678, 33.043),
         zoom: 13,
       );
+
+  /// Safely get Apple Maps controller, returns null if not ready or disposing
+  /// CRITICAL: Always re-check mounted and _isDisposing after any await
+  /// This prevents "awaiting a zombie" completer issue
+  Future<apple_maps.AppleMapController?> _getAppleMapController() async {
+    // 1. Immediate rejection - check all conditions upfront
+    if (_isDisposing || !mounted || !_appleMapControllerReady) {
+      return null;
+    }
+
+    // 2. Only await if we know it's actually finished
+    // This prevents awaiting a completer that's still being set up
+    if (!_appleMapController.isCompleted) {
+      return null;
+    }
+
+    try {
+      final controller = await _appleMapController.future;
+
+      // 3. Post-await verification (The "Wait, are you still there?" check)
+      // Widget might be disposed during the await
+      if (_isDisposing || !mounted) {
+        return null;
+      }
+
+      return controller;
+    } on PlatformException catch (e) {
+      // Suppress "methods called on terminated view" errors
+      debugPrint(
+        'PlatformException getting Apple Maps controller (suppressed): ${e.message}',
+      );
+      return null;
+    } catch (e) {
+      debugPrint('Error getting Apple Maps controller: $e');
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -122,6 +163,18 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _isDisposing = true;
+
+    // Reset controller ready flag
+    _appleMapControllerReady = false;
+
+    // Don't complete the completer if it's not completed yet
+    // This prevents trying to use a deallocated controller
+    if (!_appleMapController.isCompleted) {
+      // Create a new completer to prevent any pending futures from completing
+      _appleMapController = Completer<apple_maps.AppleMapController>();
+    }
+
     // Remove listener if it was added
     if (_themeListenerAdded) {
       try {
@@ -142,9 +195,18 @@ class _MapScreenState extends State<MapScreen> {
   void _onThemeProviderChanged() {
     // Reload markers when map provider changes
     // Use WidgetsBinding to ensure we're in a safe state
-    if (mounted) {
+    if (mounted && !_isDisposing) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
+        if (mounted && !_isDisposing) {
+          // Reset controller state before rebuilding
+          _appleMapControllerReady = false;
+
+          // Recreate the completer to avoid using deallocated controller
+          // This prevents the unowned reference crash
+          if (_appleMapController.isCompleted) {
+            _appleMapController = Completer<apple_maps.AppleMapController>();
+          }
+
           // Increment rebuild key to force Apple Map widget rebuild
           setState(() {
             _markersReady = false;
@@ -679,22 +741,45 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _animateToVenue(Venue venue) async {
+    if (_isDisposing || !mounted) return;
+
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps;
 
     if (Platform.isIOS) {
       if (useAppleMaps) {
         // For native Apple Maps - only move camera, don't change zoom
-        final controller = await _appleMapController.future;
-        // Use newLatLng to only change position without affecting zoom
-        await controller.animateCamera(
-          apple_maps.CameraUpdate.newLatLng(
-            apple_maps.LatLng(venue.lat, venue.lng),
-          ),
-        );
-        // Update current position
-        _currentLat = venue.lat;
-        _currentLng = venue.lng;
+        final controller = await _getAppleMapController();
+
+        // CRITICAL: Re-check after await
+        if (controller == null || !mounted || _isDisposing) {
+          return;
+        }
+
+        try {
+          // Use newLatLng to only change position without affecting zoom
+          // We use a local variable to ensure the reference doesn't change mid-animation
+          await controller.animateCamera(
+            apple_maps.CameraUpdate.newLatLng(
+              apple_maps.LatLng(venue.lat, venue.lng),
+            ),
+          );
+
+          // CRITICAL: Re-check after animateCamera await
+          if (!mounted || _isDisposing) {
+            return;
+          }
+
+          // Update current position
+          _currentLat = venue.lat;
+          _currentLng = venue.lng;
+        } on PlatformException catch (e) {
+          // This catches the 'unowned reference' or 'view terminated' exception
+          // before it bubbles up to a crash
+          debugPrint('Suppressed Apple Maps interaction error: $e');
+        } catch (e) {
+          debugPrint('Error animating to venue in Apple Maps: $e');
+        }
       } else {
         // For Google Maps on iOS - use Google Maps controller
         final controller = await _mapController.future;
@@ -1092,34 +1177,75 @@ class _MapScreenState extends State<MapScreen> {
           : _initialApplePosition;
 
       return apple_maps.AppleMap(
-        key: ValueKey(
-          'apple_map_${themeProvider.useAppleMaps}_$_markersReady}_$_appleMapRebuildKey',
-        ),
+        // ONLY rebuild the map if the provider itself changes.
+        // Do not include markersReady or rebuildKey here.
+        // This prevents destroying/recreating the native view unnecessarily
+        key: ValueKey('apple_map_provider_${themeProvider.useAppleMaps}'),
         initialCameraPosition: cameraPosition,
         annotations: _appleMapAnnotations.isEmpty
             ? _buildAppleMapsAnnotations()
             : _appleMapAnnotations,
         onMapCreated: (apple_maps.AppleMapController controller) async {
+          // Prevent multiple completions and operations during disposal
+          if (_isDisposing || !mounted) {
+            return;
+          }
+
           if (!_appleMapController.isCompleted) {
             _appleMapController.complete(controller);
+
+            // Short buffer for native initialization
+            await Future.delayed(const Duration(milliseconds: 150));
+
+            if (!mounted || _isDisposing) {
+              return;
+            }
+
+            // Use setState to update the ready flag (better practice)
+            if (mounted && !_isDisposing) {
+              setState(() {
+                _appleMapControllerReady = true;
+              });
+            }
+
             // If we have a current position, animate to it to preserve camera position
             if (_currentLat != null &&
                 _currentLng != null &&
                 _currentZoom != null) {
-              await controller.animateCamera(
-                apple_maps.CameraUpdate.newCameraPosition(
-                  apple_maps.CameraPosition(
-                    target: apple_maps.LatLng(_currentLat!, _currentLng!),
-                    zoom: _currentZoom!,
+              try {
+                // Use the controller directly, not await a new future
+                // We use a local variable to ensure the reference doesn't change mid-animation
+                await controller.animateCamera(
+                  apple_maps.CameraUpdate.newCameraPosition(
+                    apple_maps.CameraPosition(
+                      target: apple_maps.LatLng(_currentLat!, _currentLng!),
+                      zoom: _currentZoom!,
+                    ),
                   ),
-                ),
-              );
+                );
+
+                // CRITICAL: Re-check after animateCamera await
+                if (!mounted || _isDisposing) {
+                  return;
+                }
+              } on PlatformException catch (e) {
+                // Suppress "methods called on terminated view" errors
+                debugPrint(
+                  'PlatformException animating camera (suppressed): ${e.message}',
+                );
+              } catch (e) {
+                debugPrint('Error animating camera on map created: $e');
+              }
             } else {
-              _currentZoom = _initialApplePosition.zoom;
-              _currentLat = _initialApplePosition.target.latitude;
-              _currentLng = _initialApplePosition.target.longitude;
+              if (mounted && !_isDisposing) {
+                _currentZoom = _initialApplePosition.zoom;
+                _currentLat = _initialApplePosition.target.latitude;
+                _currentLng = _initialApplePosition.target.longitude;
+              }
             }
-            print('✅ Native Apple Map created successfully');
+            if (mounted && !_isDisposing) {
+              debugPrint('✅ Native Apple Map created successfully');
+            }
           }
         },
         onTap: (apple_maps.LatLng position) {
@@ -1682,19 +1808,24 @@ class _MapScreenState extends State<MapScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () async {
-                            if (!mounted) return;
+                            if (!mounted ||
+                                _isDisposing ||
+                                !_appleMapControllerReady) {
+                              return;
+                            }
+
                             try {
                               if (useAppleMaps) {
                                 // Apple Maps - calculate new zoom level
-                                if (!_appleMapController.isCompleted) {
+                                final controller =
+                                    await _getAppleMapController();
+
+                                // CRITICAL: Re-check after await
+                                if (controller == null ||
+                                    !mounted ||
+                                    _isDisposing) {
                                   return;
                                 }
-                                if (!mounted) return;
-
-                                final controller =
-                                    await _appleMapController.future;
-
-                                if (!mounted) return;
 
                                 final lat =
                                     _currentLat ??
@@ -1716,16 +1847,33 @@ class _MapScreenState extends State<MapScreen> {
                                   20.0,
                                 );
 
-                                await controller.animateCamera(
-                                  apple_maps.CameraUpdate.newCameraPosition(
-                                    apple_maps.CameraPosition(
-                                      target: apple_maps.LatLng(lat, lng),
-                                      zoom: newZoom,
+                                try {
+                                  await controller.animateCamera(
+                                    apple_maps.CameraUpdate.newCameraPosition(
+                                      apple_maps.CameraPosition(
+                                        target: apple_maps.LatLng(lat, lng),
+                                        zoom: newZoom,
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
 
-                                if (mounted) {
+                                  // CRITICAL: Re-check after animateCamera await
+                                  if (!mounted || _isDisposing) {
+                                    return;
+                                  }
+                                } on PlatformException catch (e) {
+                                  // This catches the 'unowned reference' or 'view terminated' exception
+                                  // before it bubbles up to a crash
+                                  debugPrint(
+                                    'Suppressed Apple Maps interaction error: $e',
+                                  );
+                                  return;
+                                } catch (e) {
+                                  debugPrint('Error zooming in Apple Maps: $e');
+                                  return;
+                                }
+
+                                if (mounted && !_isDisposing) {
                                   setState(() {
                                     _currentZoom = newZoom;
                                     _currentLat = lat;
@@ -1737,11 +1885,11 @@ class _MapScreenState extends State<MapScreen> {
                                 if (!_mapController.isCompleted) {
                                   return;
                                 }
-                                if (!mounted) return;
+                                if (!mounted || _isDisposing) return;
 
                                 final controller = await _mapController.future;
 
-                                if (!mounted) return;
+                                if (!mounted || _isDisposing) return;
 
                                 await controller.animateCamera(
                                   gmaps.CameraUpdate.zoomIn(),
@@ -1794,19 +1942,24 @@ class _MapScreenState extends State<MapScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () async {
-                            if (!mounted) return;
+                            if (!mounted ||
+                                _isDisposing ||
+                                !_appleMapControllerReady) {
+                              return;
+                            }
+
                             try {
                               if (useAppleMaps) {
                                 // Apple Maps - calculate new zoom level
-                                if (!_appleMapController.isCompleted) {
+                                final controller =
+                                    await _getAppleMapController();
+
+                                // CRITICAL: Re-check after await
+                                if (controller == null ||
+                                    !mounted ||
+                                    _isDisposing) {
                                   return;
                                 }
-                                if (!mounted) return;
-
-                                final controller =
-                                    await _appleMapController.future;
-
-                                if (!mounted) return;
 
                                 final lat =
                                     _currentLat ??
@@ -1828,16 +1981,35 @@ class _MapScreenState extends State<MapScreen> {
                                   20.0,
                                 );
 
-                                await controller.animateCamera(
-                                  apple_maps.CameraUpdate.newCameraPosition(
-                                    apple_maps.CameraPosition(
-                                      target: apple_maps.LatLng(lat, lng),
-                                      zoom: newZoom,
+                                try {
+                                  await controller.animateCamera(
+                                    apple_maps.CameraUpdate.newCameraPosition(
+                                      apple_maps.CameraPosition(
+                                        target: apple_maps.LatLng(lat, lng),
+                                        zoom: newZoom,
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
 
-                                if (mounted) {
+                                  // CRITICAL: Re-check after animateCamera await
+                                  if (!mounted || _isDisposing) {
+                                    return;
+                                  }
+                                } on PlatformException catch (e) {
+                                  // This catches the 'unowned reference' or 'view terminated' exception
+                                  // before it bubbles up to a crash
+                                  debugPrint(
+                                    'Suppressed Apple Maps interaction error: $e',
+                                  );
+                                  return;
+                                } catch (e) {
+                                  debugPrint(
+                                    'Error zooming out Apple Maps: $e',
+                                  );
+                                  return;
+                                }
+
+                                if (mounted && !_isDisposing) {
                                   setState(() {
                                     _currentZoom = newZoom;
                                     _currentLat = lat;
@@ -1919,23 +2091,52 @@ class _MapScreenState extends State<MapScreen> {
                               }
 
                               // Use native Apple Maps controller
-                              final controller =
-                                  await _appleMapController.future;
-                              await controller.animateCamera(
-                                apple_maps.CameraUpdate.newCameraPosition(
-                                  apple_maps.CameraPosition(
-                                    target: apple_maps.LatLng(
-                                      locationProvider.latitude!,
-                                      locationProvider.longitude!,
+                              if (!_appleMapControllerReady) {
+                                return;
+                              }
+
+                              final controller = await _getAppleMapController();
+
+                              // CRITICAL: Re-check after await
+                              if (controller == null ||
+                                  !mounted ||
+                                  _isDisposing) {
+                                return;
+                              }
+
+                              try {
+                                await controller.animateCamera(
+                                  apple_maps.CameraUpdate.newCameraPosition(
+                                    apple_maps.CameraPosition(
+                                      target: apple_maps.LatLng(
+                                        locationProvider.latitude!,
+                                        locationProvider.longitude!,
+                                      ),
+                                      zoom: 15,
                                     ),
-                                    zoom: 15,
                                   ),
-                                ),
-                              );
-                              // Update current position
-                              _currentLat = locationProvider.latitude;
-                              _currentLng = locationProvider.longitude;
-                              _currentZoom = 15;
+                                );
+
+                                // CRITICAL: Re-check after animateCamera await
+                                if (!mounted || _isDisposing) {
+                                  return;
+                                }
+
+                                // Update current position
+                                _currentLat = locationProvider.latitude;
+                                _currentLng = locationProvider.longitude;
+                                _currentZoom = 15;
+                              } on PlatformException catch (e) {
+                                // This catches the 'unowned reference' or 'view terminated' exception
+                                // before it bubbles up to a crash
+                                debugPrint(
+                                  'Suppressed Apple Maps interaction error: $e',
+                                );
+                              } catch (e) {
+                                debugPrint(
+                                  'Error animating to user location in Apple Maps: $e',
+                                );
+                              }
                             } else {
                               // Use Google Maps controller on iOS
                               final controller = await _mapController.future;
