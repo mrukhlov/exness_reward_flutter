@@ -275,6 +275,38 @@ class _MapScreenState extends State<MapScreen> {
     }).toList();
   }
 
+  /// Check if tap position is near the last clicked annotation (if any)
+  /// Returns true if tap is within threshold distance of the selected annotation
+  bool _isTapNearSelectedAnnotation(apple_maps.LatLng tapPosition) {
+    // If no annotation is selected, return false
+    if (_selectedVenueId == null) {
+      return false;
+    }
+
+    // Threshold distance in degrees (approximately 100-200 meters depending on zoom)
+    // This covers the marker size plus some tolerance
+    const double threshold = 0.0001;
+
+    try {
+      final venuesProvider = Provider.of<VenuesProvider>(
+        context,
+        listen: false,
+      );
+      final selectedVenue = venuesProvider.venues.firstWhere(
+        (v) => v.id == _selectedVenueId,
+      );
+
+      final latDiff = (tapPosition.latitude - selectedVenue.lat).abs();
+      final lngDiff = (tapPosition.longitude - selectedVenue.lng).abs();
+
+      // Simple distance check - if both lat and lng differences are within threshold
+      return latDiff < threshold && lngDiff < threshold;
+    } catch (e) {
+      // Venue not found, return false
+      return false;
+    }
+  }
+
   /// Group nearby venues into clusters based on zoom level
   List<_Cluster> _createClusters(List<Venue> venues, double? zoom) {
     // If zoomed in enough, don't cluster (show individual markers)
@@ -584,8 +616,9 @@ class _MapScreenState extends State<MapScreen> {
   /// Handle Apple Map annotation tap - update annotations directly without rebuilding map
   /// This approach swaps icons directly in the annotations Set, preserving camera position
   Future<void> _handleAppleMapAnnotationTap(Venue venue) async {
-    print(_selectedVenueId);
-    print('fire _handleAppleMapAnnotationTap');
+    print('fire annotation onTap');
+    print('_selectedVenueId: $_selectedVenueId');
+    print('fire _handleAppleMapAnnotationTap: ${venue.id}');
     if (!mounted) return;
 
     final previousSelected = _selectedVenueId;
@@ -849,7 +882,7 @@ class _MapScreenState extends State<MapScreen> {
 [
   {
     "elementType": "geometry",
-    "stylers": [{"color": "#f5f5f5"}]
+    "stylers": [{"color": "#ffffff"}]
   },
   {
     "elementType": "labels.icon",
@@ -861,7 +894,12 @@ class _MapScreenState extends State<MapScreen> {
   },
   {
     "elementType": "labels.text.stroke",
-    "stylers": [{"color": "#f5f5f5"}]
+    "stylers": [{"color": "#ffffff"}]
+  },
+  {
+    "featureType": "administrative",
+    "elementType": "geometry",
+    "stylers": [{"color": "#e0e0e0"}]
   },
   {
     "featureType": "administrative.land_parcel",
@@ -869,9 +907,14 @@ class _MapScreenState extends State<MapScreen> {
     "stylers": [{"color": "#bdbdbd"}]
   },
   {
+    "featureType": "landscape",
+    "elementType": "geometry",
+    "stylers": [{"color": "#f5f5f5"}]
+  },
+  {
     "featureType": "poi",
     "elementType": "geometry",
-    "stylers": [{"color": "#eeeeee"}]
+    "stylers": [{"color": "#f5f5f5"}]
   },
   {
     "featureType": "poi",
@@ -881,7 +924,7 @@ class _MapScreenState extends State<MapScreen> {
   {
     "featureType": "poi.park",
     "elementType": "geometry",
-    "stylers": [{"color": "#e5e5e5"}]
+    "stylers": [{"color": "#e8e8e8"}]
   },
   {
     "featureType": "poi.park",
@@ -894,19 +937,29 @@ class _MapScreenState extends State<MapScreen> {
     "stylers": [{"color": "#ffffff"}]
   },
   {
-    "featureType": "road.arterial",add
+    "featureType": "road.arterial",
+    "elementType": "geometry",
+    "stylers": [{"color": "#ffffff"}]
+  },
+  {
+    "featureType": "road.arterial",
     "elementType": "labels.text.fill",
     "stylers": [{"color": "#757575"}]
   },
   {
     "featureType": "road.highway",
     "elementType": "geometry",
-    "stylers": [{"color": "#dadada"}]
+    "stylers": [{"color": "#e0e0e0"}]
   },
   {
     "featureType": "road.highway",
     "elementType": "labels.text.fill",
     "stylers": [{"color": "#616161"}]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "geometry",
+    "stylers": [{"color": "#ffffff"}]
   },
   {
     "featureType": "road.local",
@@ -926,7 +979,7 @@ class _MapScreenState extends State<MapScreen> {
   {
     "featureType": "water",
     "elementType": "geometry",
-    "stylers": [{"color": "#c9c9c9"}]
+    "stylers": [{"color": "#e0e0e0"}]
   },
   {
     "featureType": "water",
@@ -1071,9 +1124,17 @@ class _MapScreenState extends State<MapScreen> {
         },
         onTap: (apple_maps.LatLng position) {
           // Clear selection when tapping on empty map area
-          // (Marker taps are handled by annotation onTap handlers)
+          // Since map onTap fires before annotation onTap, check if tap is near selected annotation first
+          if (_isTapNearSelectedAnnotation(position)) {
+            // Tap is near the selected annotation - let annotation handler take over
+            print('Tap is near selected annotation, skipping map tap handler');
+            return;
+          }
+
+          // Tap is not near the selected annotation - clear selection
           if (mounted) {
             setState(() {
+              print('fire map onTap - clearing selection');
               // Rebuild annotations to show all markers as unselected (white)
               _selectedVenueId = null;
               _appleMapAnnotations = _buildAppleMapsAnnotations();
@@ -1592,89 +1653,227 @@ class _MapScreenState extends State<MapScreen> {
                     },
                   ),
                 // Zoom In
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1E1E1E).withOpacity(0.9)
-                        : Colors.white.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.1)
-                          : Colors.grey.shade200,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, _) {
+                    final useAppleMaps =
+                        Platform.isIOS && themeProvider.useAppleMaps;
+                    return Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E1E1E).withOpacity(0.9)
+                            : Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.grey.shade200,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: Platform.isIOS
-                          ? null
-                          : () async {
-                              final controller = await _mapController.future;
-                              await controller.animateCamera(
-                                gmaps.CameraUpdate.zoomIn(),
-                              );
-                            },
-                      borderRadius: BorderRadius.circular(24),
-                      child: Icon(
-                        Icons.add,
-                        size: 24,
-                        color: isDark ? Colors.white : Colors.black,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () async {
+                            if (!mounted) return;
+                            try {
+                              if (useAppleMaps) {
+                                // Apple Maps - calculate new zoom level
+                                if (!_appleMapController.isCompleted) {
+                                  return;
+                                }
+                                if (!mounted) return;
+
+                                final controller =
+                                    await _appleMapController.future;
+
+                                if (!mounted) return;
+
+                                final lat =
+                                    _currentLat ??
+                                    _initialApplePosition.target.latitude;
+                                final lng =
+                                    _currentLng ??
+                                    _initialApplePosition.target.longitude;
+                                final currentZoom =
+                                    _currentZoom ?? _initialApplePosition.zoom;
+
+                                if (lat.isNaN ||
+                                    lng.isNaN ||
+                                    currentZoom.isNaN) {
+                                  return;
+                                }
+
+                                final newZoom = (currentZoom + 1.0).clamp(
+                                  3.0,
+                                  20.0,
+                                );
+
+                                await controller.animateCamera(
+                                  apple_maps.CameraUpdate.newCameraPosition(
+                                    apple_maps.CameraPosition(
+                                      target: apple_maps.LatLng(lat, lng),
+                                      zoom: newZoom,
+                                    ),
+                                  ),
+                                );
+
+                                if (mounted) {
+                                  setState(() {
+                                    _currentZoom = newZoom;
+                                    _currentLat = lat;
+                                    _currentLng = lng;
+                                  });
+                                }
+                              } else {
+                                // Google Maps (works on both iOS and Android)
+                                if (!_mapController.isCompleted) {
+                                  return;
+                                }
+                                if (!mounted) return;
+
+                                final controller = await _mapController.future;
+
+                                if (!mounted) return;
+
+                                await controller.animateCamera(
+                                  gmaps.CameraUpdate.zoomIn(),
+                                );
+                              }
+                            } catch (e, stackTrace) {
+                              print('Error zooming in: $e');
+                              print('Stack trace: $stackTrace');
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(24),
+                          child: Icon(
+                            Icons.add,
+                            size: 24,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 // Zoom Out
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1E1E1E).withOpacity(0.9)
-                        : Colors.white.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.1)
-                          : Colors.grey.shade200,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, _) {
+                    final useAppleMaps =
+                        Platform.isIOS && themeProvider.useAppleMaps;
+                    return Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E1E1E).withOpacity(0.9)
+                            : Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.grey.shade200,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: Platform.isIOS
-                          ? null
-                          : () async {
-                              final controller = await _mapController.future;
-                              await controller.animateCamera(
-                                gmaps.CameraUpdate.zoomOut(),
-                              );
-                            },
-                      borderRadius: BorderRadius.circular(24),
-                      child: Icon(
-                        Icons.remove,
-                        size: 24,
-                        color: isDark ? Colors.white : Colors.black,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () async {
+                            if (!mounted) return;
+                            try {
+                              if (useAppleMaps) {
+                                // Apple Maps - calculate new zoom level
+                                if (!_appleMapController.isCompleted) {
+                                  return;
+                                }
+                                if (!mounted) return;
+
+                                final controller =
+                                    await _appleMapController.future;
+
+                                if (!mounted) return;
+
+                                final lat =
+                                    _currentLat ??
+                                    _initialApplePosition.target.latitude;
+                                final lng =
+                                    _currentLng ??
+                                    _initialApplePosition.target.longitude;
+                                final currentZoom =
+                                    _currentZoom ?? _initialApplePosition.zoom;
+
+                                if (lat.isNaN ||
+                                    lng.isNaN ||
+                                    currentZoom.isNaN) {
+                                  return;
+                                }
+
+                                final newZoom = (currentZoom - 1.0).clamp(
+                                  3.0,
+                                  20.0,
+                                );
+
+                                await controller.animateCamera(
+                                  apple_maps.CameraUpdate.newCameraPosition(
+                                    apple_maps.CameraPosition(
+                                      target: apple_maps.LatLng(lat, lng),
+                                      zoom: newZoom,
+                                    ),
+                                  ),
+                                );
+
+                                if (mounted) {
+                                  setState(() {
+                                    _currentZoom = newZoom;
+                                    _currentLat = lat;
+                                    _currentLng = lng;
+                                  });
+                                }
+                              } else {
+                                // Google Maps (works on both iOS and Android)
+                                if (!_mapController.isCompleted) {
+                                  return;
+                                }
+                                if (!mounted) return;
+
+                                final controller = await _mapController.future;
+
+                                if (!mounted) return;
+
+                                await controller.animateCamera(
+                                  gmaps.CameraUpdate.zoomOut(),
+                                );
+                              }
+                            } catch (e, stackTrace) {
+                              print('Error zooming out: $e');
+                              print('Stack trace: $stackTrace');
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(24),
+                          child: Icon(
+                            Icons.remove,
+                            size: 24,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 // My Location
