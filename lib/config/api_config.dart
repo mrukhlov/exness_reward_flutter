@@ -13,7 +13,7 @@
 
 class ApiConfig {
   // Backend API URL - GCP Compute Engine instance
-  static const String baseUrl = 'http://34.42.207.250:8000';
+  static const String baseUrl = 'http://34.46.123.38:8000';
 
   // Alternative: Use environment variables
   // static const String baseUrl = const String.fromEnvironment(

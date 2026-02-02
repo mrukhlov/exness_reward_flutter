@@ -62,7 +62,7 @@ class ThemeProvider with ChangeNotifier {
 
   Future<void> _loadMapProvider() async {
     try {
-      _useAppleMaps = false;
+      _useAppleMaps = true;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading map provider: $e');

@@ -67,6 +67,8 @@ class _MapScreenState extends State<MapScreen> {
   double? _currentLat;
   double? _currentLng;
   bool _themeListenerAdded = false; // Track if ThemeProvider listener is added
+  bool _venuesListenerAdded =
+      false; // Track if VenuesProvider listener is added
   int _appleMapRebuildKey = 0; // Counter to force Apple Map rebuilds
   latlong.LatLng _currentCenter = const latlong.LatLng(34.678, 33.043);
   int _lastZoomLevel =
@@ -159,6 +161,35 @@ class _MapScreenState extends State<MapScreen> {
       themeProvider.addListener(_onThemeProviderChanged);
       _themeListenerAdded = true;
     }
+    if (!_venuesListenerAdded) {
+      final venuesProvider = Provider.of<VenuesProvider>(
+        context,
+        listen: false,
+      );
+      venuesProvider.addListener(_onVenuesProviderChanged);
+      _venuesListenerAdded = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(MapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedVenueId != oldWidget.selectedVenueId) {
+      if (widget.selectedVenueId != null) {
+        setState(() {
+          _selectedVenueId = widget.selectedVenueId;
+        });
+        
+        // Ensure markers are rebuilt to reflect selection
+        final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+        if (Platform.isIOS && themeProvider.useAppleMaps) {
+             _appleMapAnnotations = _buildAppleMapsAnnotations();
+        }
+
+        // Animate to the new venue
+        _tryAnimateToSelectedVenue();
+      }
+    }
   }
 
   @override
@@ -187,6 +218,18 @@ class _MapScreenState extends State<MapScreen> {
         // Ignore errors if context is not available
       }
       _themeListenerAdded = false;
+    }
+    if (_venuesListenerAdded) {
+      try {
+        final venuesProvider = Provider.of<VenuesProvider>(
+          context,
+          listen: false,
+        );
+        venuesProvider.removeListener(_onVenuesProviderChanged);
+      } catch (e) {
+        // Ignore errors if context is not available
+      }
+      _venuesListenerAdded = false;
     }
     _searchController.dispose();
     super.dispose();
@@ -219,12 +262,21 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  void _onVenuesProviderChanged() {
+    // Reload markers when venues change
+    if (mounted && !_isDisposing) {
+      _loadMarkerIcons(forceReload: false);
+    }
+  }
+
   Future<void> _loadMarkerIcons({bool forceReload = false}) async {
     final venuesProvider = Provider.of<VenuesProvider>(context, listen: false);
 
-    // Wait for venues to be available
-    if (!venuesProvider.hasVenues || !mounted || !_markerCache.isPreloaded) {
-      if (mounted && _markerCache.isPreloaded && venuesProvider.hasVenues) {
+    // Wait for venues to be available. Check categories too as we strictly need them.
+    if ((!venuesProvider.hasVenues && venuesProvider.categories.length <= 1) ||
+        !mounted ||
+        !_markerCache.isPreloaded) {
+      if (mounted && _markerCache.isPreloaded) {
         // Try again after a short delay
         Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) _loadMarkerIcons(forceReload: forceReload);
@@ -241,51 +293,57 @@ class _MapScreenState extends State<MapScreen> {
       // Clear icon caches when switching providers or forcing reload
       if (forceReload) {
         if (useAppleMaps) {
-          _appleMarkerIcons.clear(); // Clear Apple Maps icons
+          _appleMarkerIcons.clear();
         } else {
-          _markerIcons.clear(); // Clear Google Maps icons
+          _markerIcons.clear();
         }
       }
 
-      if (useAppleMaps) {
-        // Load Apple Maps marker icons from cache
-        // Always reload when forceReload is true to ensure fresh icons
-        for (final venue in venues) {
-          final category = venue.category.isNotEmpty
-              ? venue.category
-              : venue.type;
-          final selectedKey = '${venue.id}_selected';
-          final unselectedKey = '${venue.id}_unselected';
+      // Collect all unique categories from venues AND provider to ensure coverage
+      final categories = <String>{...venuesProvider.categories};
+      // Also add from venues just in case there are types not element of categories
+      for (final venue in venues) {
+        categories.add(venue.category.isNotEmpty ? venue.category : venue.type);
+      }
 
-          // Always reload when forcing reload or if icon doesn't exist
-          _appleMarkerIcons[selectedKey] = await _markerCache
-              .getAppleMarkerIcon(category, true);
-          _appleMarkerIcons[unselectedKey] = await _markerCache
-              .getAppleMarkerIcon(category, false);
+      if (useAppleMaps) {
+        // Load Apple Maps marker icons from cache by Category
+        for (final category in categories) {
+          try {
+            final selectedKey = '${category}_selected';
+            final unselectedKey = '${category}_unselected';
+
+            _appleMarkerIcons[selectedKey] = await _markerCache
+                .getAppleMarkerIcon(category, true);
+            _appleMarkerIcons[unselectedKey] = await _markerCache
+                .getAppleMarkerIcon(category, false);
+          } catch (e) {
+            debugPrint('Error loading icon for category $category: $e');
+          }
         }
       } else {
-        // Load Google Maps marker icons from cache
-        // Always reload when forceReload is true to ensure fresh icons
-        for (final venue in venues) {
-          final category = venue.category.isNotEmpty
-              ? venue.category
-              : venue.type;
-          final selectedKey = '${venue.id}_selected';
-          final unselectedKey = '${venue.id}_unselected';
+        // Load Google Maps marker icons from cache by Category
+        for (final category in categories) {
+          try {
+            final selectedKey = '${category}_selected';
+            final unselectedKey = '${category}_unselected';
 
-          // Always reload when forcing reload or if icon doesn't exist
-          _markerIcons[selectedKey] = await _markerCache.getGoogleMarkerIcon(
-            category,
-            true,
-          );
-          _markerIcons[unselectedKey] = await _markerCache.getGoogleMarkerIcon(
-            category,
-            false,
-          );
+            _markerIcons[selectedKey] = await _markerCache.getGoogleMarkerIcon(
+              category,
+              true,
+            );
+            _markerIcons[unselectedKey] = await _markerCache
+                .getGoogleMarkerIcon(category, false);
+          } catch (e) {
+            debugPrint('Error loading icon for category $category: $e');
+          }
         }
       }
 
       if (mounted) {
+        debugPrint(
+          '✅ _loadMarkerIcons completed. Setting _markersReady=true. Counts: Apple=${_appleMarkerIcons.length}, Google=${_markerIcons.length}',
+        );
         setState(() {
           _markersReady = true;
           // Build and store annotations for Apple Maps
@@ -299,7 +357,9 @@ class _MapScreenState extends State<MapScreen> {
         // Try to animate to selected venue after markers are ready
         _tryAnimateToSelectedVenue();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('CRITICAL ERROR in _loadMarkerIcons: $e');
+      debugPrint('Stack trace: $stack');
       // If loading fails, mark as ready anyway - will use default markers
       if (mounted) {
         setState(() {
@@ -311,10 +371,11 @@ class _MapScreenState extends State<MapScreen> {
 
   void _tryAnimateToSelectedVenue() {
     final venuesProvider = Provider.of<VenuesProvider>(context, listen: false);
-    if (venuesProvider.hasVenues && widget.selectedVenueId != null) {
+    final targetId = _selectedVenueId ?? widget.selectedVenueId;
+    if (venuesProvider.hasVenues && targetId != null) {
       try {
         final venue = venuesProvider.venues.firstWhere(
-          (v) => v.id == widget.selectedVenueId,
+          (v) => v.id == targetId,
         );
         _animateToVenue(venue);
       } catch (e) {
@@ -505,7 +566,7 @@ class _MapScreenState extends State<MapScreen> {
         final category = venue.category.isNotEmpty
             ? venue.category
             : venue.type;
-        final iconKey = '${venue.id}_${isSelected ? 'selected' : 'unselected'}';
+        final iconKey = '${category}_${isSelected ? 'selected' : 'unselected'}';
 
         // Get cached icon or use default marker as fallback
         final icon =
@@ -652,7 +713,7 @@ class _MapScreenState extends State<MapScreen> {
     bool isSelected,
   ) async {
     if (!mounted) return;
-    final key = '${venueId}_${isSelected ? 'selected' : 'unselected'}';
+    final key = '${category}_${isSelected ? 'selected' : 'unselected'}';
 
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps;
@@ -678,62 +739,21 @@ class _MapScreenState extends State<MapScreen> {
   /// Handle Apple Map annotation tap - update annotations directly without rebuilding map
   /// This approach swaps icons directly in the annotations Set, preserving camera position
   Future<void> _handleAppleMapAnnotationTap(Venue venue) async {
-    print('fire annotation onTap');
-    print('_selectedVenueId: $_selectedVenueId');
-    print('fire _handleAppleMapAnnotationTap: ${venue.id}');
     if (!mounted) return;
-
-    final previousSelected = _selectedVenueId;
-    final category = venue.category.isNotEmpty ? venue.category : venue.type;
 
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps;
 
-    print(venue);
     if (useAppleMaps) {
-      // Get icons from cache (they should already be preloaded)
-      final selectedIcon = await _markerCache.getAppleMarkerIcon(
-        category,
-        true,
-      );
-
-      // Prepare unselected icon if there was a previous selection
-      apple_maps.BitmapDescriptor? unselectedIcon;
-      String? prevCategory;
-      if (previousSelected != null && previousSelected != venue.id) {
-        final venuesProvider = Provider.of<VenuesProvider>(
-          context,
-          listen: false,
-        );
-        final prevVenue = venuesProvider.venues.firstWhere(
-          (v) => v.id == previousSelected,
-        );
-        prevCategory = prevVenue.category.isNotEmpty
-            ? prevVenue.category
-            : prevVenue.type;
-        unselectedIcon = await _markerCache.getAppleMarkerIcon(
-          prevCategory!,
-          false,
-        );
-      }
-
-      // Update annotations directly by rebuilding them with updated icons
-      // This ensures all annotations have the correct icons based on selection state
       if (mounted) {
         setState(() {
           // Update selected venue ID
+          // This will cause _buildAppleMapsAnnotations to be called during rebuild
+          // _buildAppleMapsAnnotations reads _selectedVenueId and picks the correct icon (yellow vs white)
+          // from the already-loaded category keys in _appleMarkerIcons.
           _selectedVenueId = venue.id;
-          print(_selectedVenueId);
-
-          // Update icon cache - ensure selected icon is cached BEFORE rebuilding annotations
-          _appleMarkerIcons['${venue.id}_selected'] = selectedIcon;
-          if (unselectedIcon != null && previousSelected != null) {
-            _appleMarkerIcons['${previousSelected}_unselected'] =
-                unselectedIcon;
-          }
-
-          // Rebuild all annotations with updated selection state
-          // This ensures the tapped marker gets selected icon (yellow) and previous gets unselected (white)
+          
+          // Force annotation rebuild immediately
           _appleMapAnnotations = _buildAppleMapsAnnotations();
         });
       }
@@ -741,57 +761,50 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _animateToVenue(Venue venue) async {
-    if (_isDisposing || !mounted) return;
+    debugPrint('🎬 _animateToVenue called for ${venue.name} (${venue.lat}, ${venue.lng})');
+    if (_isDisposing || !mounted) {
+      debugPrint('❌ _animateToVenue aborted: disposed or not mounted');
+      return;
+    }
 
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final useAppleMaps = Platform.isIOS && themeProvider.useAppleMaps;
+    
+    // Check if using Apple Maps on iOS
+    if (Platform.isIOS && themeProvider.useAppleMaps) {
+      debugPrint('🍎 Using Apple Maps controller');
+      final controller = await _getAppleMapController();
+      
+      if (controller == null) {
+        debugPrint('❌ Apple Maps controller is NULL');
+        return;
+      }
+      
+      if (!mounted || _isDisposing) return;
 
-    if (Platform.isIOS) {
-      if (useAppleMaps) {
-        // For native Apple Maps - only move camera, don't change zoom
-        final controller = await _getAppleMapController();
-
-        // CRITICAL: Re-check after await
-        if (controller == null || !mounted || _isDisposing) {
-          return;
-        }
-
-        try {
-          // Use newLatLng to only change position without affecting zoom
-          // We use a local variable to ensure the reference doesn't change mid-animation
-          await controller.animateCamera(
-            apple_maps.CameraUpdate.newLatLng(
-              apple_maps.LatLng(venue.lat, venue.lng),
-            ),
-          );
-
-          // CRITICAL: Re-check after animateCamera await
-          if (!mounted || _isDisposing) {
-            return;
-          }
-
-          // Update current position
-          _currentLat = venue.lat;
-          _currentLng = venue.lng;
-        } on PlatformException catch (e) {
-          // This catches the 'unowned reference' or 'view terminated' exception
-          // before it bubbles up to a crash
-          debugPrint('Suppressed Apple Maps interaction error: $e');
-        } catch (e) {
-          debugPrint('Error animating to venue in Apple Maps: $e');
-        }
-      } else {
-        // For Google Maps on iOS - use Google Maps controller
-        final controller = await _mapController.future;
+      try {
+        // Use newLatLng to only change position without affecting zoom
+        debugPrint('🚀 Animating camera...');
         await controller.animateCamera(
-          gmaps.CameraUpdate.newLatLng(gmaps.LatLng(venue.lat, venue.lng)),
+          apple_maps.CameraUpdate.newLatLng(
+            apple_maps.LatLng(venue.lat, venue.lng),
+          ),
         );
+        debugPrint('✅ Animation accepted by controller');
+
+        // CRITICAL: Re-check after animateCamera await
+        if (!mounted || _isDisposing) return;
+
         // Update current position
         _currentLat = venue.lat;
         _currentLng = venue.lng;
+      } on PlatformException catch (e) {
+        debugPrint('Suppressed Apple Maps interaction error: $e');
+      } catch (e) {
+        debugPrint('Error animating to venue in Apple Maps: $e');
       }
     } else {
-      // For Google Maps - only move camera, don't change zoom
+      // For Google Maps
+      debugPrint('🗺️ Using Google Maps controller');
       final controller = await _mapController.future;
       await controller.animateCamera(
         gmaps.CameraUpdate.newLatLng(gmaps.LatLng(venue.lat, venue.lng)),
@@ -1206,6 +1219,8 @@ class _MapScreenState extends State<MapScreen> {
               setState(() {
                 _appleMapControllerReady = true;
               });
+              // Try to animate to selected venue now that map is ready
+              _tryAnimateToSelectedVenue();
             }
 
             // If we have a current position, animate to it to preserve camera position
@@ -1337,7 +1352,8 @@ class _MapScreenState extends State<MapScreen> {
     // Add venue markers
     final venueAnnotations = _filteredVenues.map((venue) {
       final isSelected = _selectedVenueId == venue.id;
-      final iconKey = '${venue.id}_${isSelected ? 'selected' : 'unselected'}';
+      final category = venue.category.isNotEmpty ? venue.category : venue.type;
+      final iconKey = '${category}_${isSelected ? 'selected' : 'unselected'}';
 
       // Get cached icon or create a default one
       final icon = _appleMarkerIcons[iconKey];
@@ -1347,7 +1363,7 @@ class _MapScreenState extends State<MapScreen> {
 
       // Build annotation with custom icon and onTap handler
       return apple_maps.Annotation(
-        annotationId: apple_maps.AnnotationId(venue.id),
+        annotationId: apple_maps.AnnotationId('${venue.id}_${isSelected ? 's' : 'u'}'),
         position: apple_maps.LatLng(venue.lat, venue.lng),
         icon: markerIcon,
         onTap: () {
