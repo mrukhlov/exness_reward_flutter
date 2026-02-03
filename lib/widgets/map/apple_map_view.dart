@@ -294,19 +294,32 @@ class _AppleMapViewState extends State<AppleMapView>
     final controller = await _getAppleMapController();
     if (controller == null) return;
 
-    const double tinyOffset = 0.0000001;
+    // Use current position derived from visible region to avoid tracking onCameraMove
     try {
+      double lat = _currentLat;
+      double lng = _currentLng;
+
+      // Try to get more accurate center from visible region if possible
+      try {
+        final bounds = await controller.getVisibleRegion();
+        lat = (bounds.northeast.latitude + bounds.southwest.latitude) / 2;
+        lng = (bounds.northeast.longitude + bounds.southwest.longitude) / 2;
+      } catch (_) {
+        // Fallback to last known position
+      }
+
+      const double tinyOffset = 0.0000001;
       _programmaticMove = true;
       // Use moveCamera instead of animateCamera for the hack
       // This is instant and shouldn't block user interaction
       await controller.moveCamera(
         apple_maps.CameraUpdate.newLatLng(
-          apple_maps.LatLng(_currentLat + tinyOffset, _currentLng + tinyOffset),
+          apple_maps.LatLng(lat + tinyOffset, lng + tinyOffset),
         ),
       );
       if (mounted) {
-        _currentLat += tinyOffset;
-        _currentLng += tinyOffset;
+        _currentLat = lat + tinyOffset;
+        _currentLng = lng + tinyOffset;
       }
     } catch (_) {
       // If error occurs, reset flag
@@ -314,33 +327,24 @@ class _AppleMapViewState extends State<AppleMapView>
     }
   }
 
-  /// Async check using screen coordinates for better accuracy
-  Future<bool> _isTapNearSelectedAnnotation(
-    apple_maps.LatLng tapPosition,
-  ) async {
+  /// Synchronous check using distance threshold
+  /// This is robust against race conditions between map tap and annotation tap
+  bool _isTapNearSelectedAnnotation(apple_maps.LatLng tapPosition) {
     if (widget.selectedVenueId == null) return false;
-
-    final controller = await _getAppleMapController();
-    if (controller == null) return false;
 
     try {
       final selectedVenue = widget.venues.firstWhere(
         (v) => v.id == widget.selectedVenueId,
       );
 
-      final tapScreen = await controller.getScreenCoordinate(tapPosition);
-      final markerScreen = await controller.getScreenCoordinate(
-        apple_maps.LatLng(selectedVenue.lat, selectedVenue.lng),
-      );
+      final latDiff = (tapPosition.latitude - selectedVenue.lat).abs();
+      final lngDiff = (tapPosition.longitude - selectedVenue.lng).abs();
 
-      if (tapScreen == null || markerScreen == null) return false;
+      // Threshold distance in degrees (approx 100-200m depending on zoom)
+      // Tuned to cover the marker hit area
+      const double threshold = 0.0001;
 
-      final dx = (tapScreen.dx - markerScreen.dx).abs();
-      final dy = (tapScreen.dy - markerScreen.dy).abs();
-
-      // Check if tap is within ~60 pixels of the marker
-      // Standard hit area is often 44x44 points
-      return dx < 60 && dy < 60;
+      return latDiff < threshold && lngDiff < threshold;
     } catch (_) {
       return false;
     }
@@ -371,29 +375,14 @@ class _AppleMapViewState extends State<AppleMapView>
           }
         }
       },
-      onCameraMove: (position) {
-        _currentLat = position.target.latitude;
-        _currentLng = position.target.longitude;
-        _currentZoom = position.zoom;
-        widget.onCameraMove(_currentLat, _currentLng, _currentZoom);
-      },
-      onCameraIdle: () {
-        if (mounted && !_isDisposing) {
-          if (_programmaticMove) {
-            _programmaticMove = false;
-          } else {
-            _refreshMap();
-          }
-        }
-      },
-      onTap: (position) async {
+      // Removed onCameraMove to improve drag performance
+      // Removed onCameraIdle to fix kinetic scrolling issues
+      onTap: (position) {
         // If we recently tapped a marker, ignore map taps (race condition fix)
         if (_ignoreMapTap) return;
 
         // Check if tap is near the selected annotation
-        // This is a backup if the native annotation tap didn't fire but map tap did
-        // or if we just want to avoid clearing selection when hitting the marker hitbox
-        if (await _isTapNearSelectedAnnotation(position)) {
+        if (_isTapNearSelectedAnnotation(position)) {
           return;
         }
 
