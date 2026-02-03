@@ -55,6 +55,7 @@ class _AppleMapViewState extends State<AppleMapView>
   // Flags to prevent loops and conflicts
   bool _programmaticMove = false;
   bool _ignoreMapTap = false;
+  String? _internalSelectedVenueId;
 
   // Cache for marker icons
   final Map<String, apple_maps.BitmapDescriptor> _appleMarkerIcons = {};
@@ -90,6 +91,13 @@ class _AppleMapViewState extends State<AppleMapView>
       // If selection changed externally, we might need to animate
       if (widget.selectedVenueId != null &&
           widget.selectedVenueId != oldWidget.selectedVenueId) {
+        // If this update matches our last internal tap, don't animate
+        // (we already handled movement in _handleAnnotationTap to preserve zoom)
+        if (widget.selectedVenueId == _internalSelectedVenueId) {
+          _internalSelectedVenueId = null;
+          return;
+        }
+
         final venue = widget.venues.firstWhere(
           (v) => v.id == widget.selectedVenueId,
           orElse: () => widget.venues.first,
@@ -264,6 +272,7 @@ class _AppleMapViewState extends State<AppleMapView>
     });
 
     // 1. Notify parent
+    _internalSelectedVenueId = venue.id;
     widget.onVenueSelected(venue.id);
 
     // 2. Animate to venue (using newLatLng to keep zoom)
