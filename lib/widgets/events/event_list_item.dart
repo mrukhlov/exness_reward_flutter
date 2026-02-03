@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../models/event.dart';
+import '../../models/event.dart';
 
 class EventListItem extends StatelessWidget {
   final Event event;
