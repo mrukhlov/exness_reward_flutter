@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/venue.dart';
 import '../providers/location_provider.dart';
 import '../providers/venues_provider.dart';
 import '../utils/geo_utils.dart';
-import '../utils/category_icons.dart';
+import '../widgets/venue_list/venue_list_item.dart';
+import '../widgets/venue_list/venue_filters.dart';
+import '../widgets/venue_list/venue_search_bar.dart';
+import '../widgets/venue_list/venue_category_filter.dart';
 
 class VenueListScreen extends StatefulWidget {
   const VenueListScreen({super.key});
@@ -21,7 +23,7 @@ class _VenueListScreenState extends State<VenueListScreen> {
   String _activeCategory = 'All';
   String _searchQuery = '';
   bool _sortByDistance = false;
-  
+
   // Filter state
   bool _showFilters = false;
   String? _selectedPriceLevel;
@@ -72,28 +74,30 @@ class _VenueListScreenState extends State<VenueListScreen> {
       // Category filter
       final matchesCategory =
           _activeCategory == 'All' || venue.category == _activeCategory;
-      
+
       // Search filter
       final query = _searchQuery.toLowerCase();
-      final matchesSearch = query.isEmpty ||
+      final matchesSearch =
+          query.isEmpty ||
           venue.name.toLowerCase().contains(query) ||
           venue.category.toLowerCase().contains(query) ||
           (venue.address?.toLowerCase().contains(query) ?? false) ||
           venue.type.toLowerCase().contains(query);
-      
+
       // Price level filter
-      final matchesPrice = _selectedPriceLevel == null ||
+      final matchesPrice =
+          _selectedPriceLevel == null ||
           venue.priceLevel == _selectedPriceLevel;
-      
+
       // Rating filter
       final matchesRating = venue.rating >= _minRating;
-      
+
       // Open now filter
       final matchesOpen = !_openNowOnly || venue.isOpen;
-      
+
       // Partner filter
       final matchesPartner = !_partnerOnly || venue.isPartner;
-      
+
       return matchesCategory &&
           matchesSearch &&
           matchesPrice &&
@@ -129,14 +133,14 @@ class _VenueListScreenState extends State<VenueListScreen> {
 
     return filtered;
   }
-  
+
   bool get _hasActiveFilters {
     return _selectedPriceLevel != null ||
         _minRating > 0.0 ||
         _openNowOnly ||
         _partnerOnly;
   }
-  
+
   void _resetFilters() {
     setState(() {
       _selectedPriceLevel = null;
@@ -144,43 +148,6 @@ class _VenueListScreenState extends State<VenueListScreen> {
       _openNowOnly = false;
       _partnerOnly = false;
     });
-  }
-  
-  Widget _buildFilterChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required bool isDark,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFFFD00B)
-              : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFFFFD00B)
-                : (isDark
-                    ? Colors.grey.shade700
-                    : Colors.grey.shade300),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected
-                ? Colors.black
-                : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -257,397 +224,40 @@ class _VenueListScreenState extends State<VenueListScreen> {
               padding: const EdgeInsets.only(bottom: 16),
               child: Column(
                 children: [
-                  // Search Bar and Filter Button
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF252525)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isDark
-                                    ? Colors.transparent
-                                    : Colors.grey.shade200,
-                              ),
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (_) => _fetchData(),
-                              style: TextStyle(
-                                color: isDark ? Colors.white : Colors.black,
-                                fontSize: 16,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Search venues or cuisines...',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontSize: 16,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: Colors.grey.shade400,
-                                  size: 24,
-                                ),
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(
-                                        icon: Icon(
-                                          Icons.close,
-                                          color: Colors.grey.shade600,
-                                          size: 20,
-                                        ),
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          _fetchData();
-                                        },
-                                      )
-                                    : null,
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Filter Button
-                        GestureDetector(
-                          onTap: () {
-                            setState(() => _showFilters = !_showFilters);
-                          },
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: _hasActiveFilters
-                                  ? const Color(0xFFFFD00B)
-                                  : (isDark
-                                      ? const Color(0xFF252525)
-                                      : Colors.white),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isDark
-                                    ? Colors.transparent
-                                    : Colors.grey.shade200,
-                              ),
-                            ),
-                            child: Stack(
-                              children: [
-                                Center(
-                                  child: Icon(
-                                    Icons.tune,
-                                    color: _hasActiveFilters
-                                        ? Colors.black
-                                        : Colors.grey.shade400,
-                                    size: 24,
-                                  ),
-                                ),
-                                if (_hasActiveFilters)
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  VenueSearchBar(
+                    controller: _searchController,
+                    searchQuery: _searchQuery,
+                    hasActiveFilters: _hasActiveFilters,
+                    onFilterTap: () =>
+                        setState(() => _showFilters = !_showFilters),
+                    onClear: () {
+                      _searchController.clear();
+                      _fetchData();
+                    },
+                    onChanged: (_) => _fetchData(),
                   ),
-                  // Filter Panel
                   if (_showFilters)
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF252525)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.transparent
-                              : Colors.grey.shade200,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Filters',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : Colors.black,
-                                ),
-                              ),
-                              if (_hasActiveFilters)
-                                TextButton(
-                                  onPressed: _resetFilters,
-                                  child: Text(
-                                    'Reset',
-                                    style: TextStyle(
-                                      color: const Color(0xFFFFD00B),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Price Level Filter
-                          Text(
-                            'Price Level',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: isDark
-                                  ? Colors.grey.shade300
-                                  : Colors.grey.shade700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              _buildFilterChip(
-                                label: 'Any',
-                                isSelected: _selectedPriceLevel == null,
-                                onTap: () {
-                                  setState(() => _selectedPriceLevel = null);
-                                },
-                                isDark: isDark,
-                              ),
-                              _buildFilterChip(
-                                label: '\$',
-                                isSelected: _selectedPriceLevel == '\$',
-                                onTap: () {
-                                  setState(() => _selectedPriceLevel = '\$');
-                                },
-                                isDark: isDark,
-                              ),
-                              _buildFilterChip(
-                                label: '\$\$',
-                                isSelected: _selectedPriceLevel == '\$\$',
-                                onTap: () {
-                                  setState(() => _selectedPriceLevel = '\$\$');
-                                },
-                                isDark: isDark,
-                              ),
-                              _buildFilterChip(
-                                label: '\$\$\$',
-                                isSelected: _selectedPriceLevel == '\$\$\$',
-                                onTap: () {
-                                  setState(() => _selectedPriceLevel = '\$\$\$');
-                                },
-                                isDark: isDark,
-                              ),
-                              _buildFilterChip(
-                                label: '\$\$\$\$',
-                                isSelected: _selectedPriceLevel == '\$\$\$\$',
-                                onTap: () {
-                                  setState(() => _selectedPriceLevel = '\$\$\$\$');
-                                },
-                                isDark: isDark,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          // Rating Filter
-                          Text(
-                            'Minimum Rating',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: isDark
-                                  ? Colors.grey.shade300
-                                  : Colors.grey.shade700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Slider(
-                                  value: _minRating,
-                                  min: 0.0,
-                                  max: 5.0,
-                                  divisions: 10,
-                                  activeColor: const Color(0xFFFFD00B),
-                                  inactiveColor: isDark
-                                      ? Colors.grey.shade700
-                                      : Colors.grey.shade300,
-                                  onChanged: (value) {
-                                    setState(() => _minRating = value);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                width: 50,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.grey.shade800
-                                      : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  _minRating.toStringAsFixed(1),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark
-                                        ? Colors.white
-                                        : Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          // Open Now Filter
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Open Now Only',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: isDark
-                                        ? Colors.grey.shade300
-                                        : Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                              Switch(
-                                value: _openNowOnly,
-                                onChanged: (value) {
-                                  setState(() => _openNowOnly = value);
-                                },
-                                activeColor: const Color(0xFFFFD00B),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // Partner Only Filter
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Partner Venues Only',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: isDark
-                                        ? Colors.grey.shade300
-                                        : Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                              Switch(
-                                value: _partnerOnly,
-                                onChanged: (value) {
-                                  setState(() => _partnerOnly = value);
-                                },
-                                activeColor: const Color(0xFFFFD00B),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    VenueFilters(
+                      selectedPriceLevel: _selectedPriceLevel,
+                      minRating: _minRating,
+                      openNowOnly: _openNowOnly,
+                      partnerOnly: _partnerOnly,
+                      onPriceLevelChanged: (val) =>
+                          setState(() => _selectedPriceLevel = val),
+                      onRatingChanged: (val) =>
+                          setState(() => _minRating = val),
+                      onOpenNowChanged: (val) =>
+                          setState(() => _openNowOnly = val),
+                      onPartnerChanged: (val) =>
+                          setState(() => _partnerOnly = val),
+                      onReset: _resetFilters,
                     ),
-                  // Category Chips
-                  SizedBox(
-                    height: 36,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: venuesProvider.categories.length,
-                      itemBuilder: (context, index) {
-                        final category = venuesProvider.categories[index];
-                        final isActive = _activeCategory == category;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 2),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => _activeCategory = category);
-                            },
-                            child: Container(
-                              height: 36,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isActive
-                                    ? const Color(0xFFFFD00B)
-                                    : (isDark
-                                          ? const Color(0xFF252525)
-                                          : Colors.white),
-                                borderRadius: BorderRadius.circular(18),
-                                border: isActive
-                                    ? null
-                                    : Border.all(
-                                        color: isDark
-                                            ? Colors.white.withOpacity(0.1)
-                                            : Colors.grey.shade200,
-                                      ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    getCategoryIcon(category),
-                                    size: 18,
-                                    color: isActive
-                                        ? Colors.black
-                                        : Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    category,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: isActive
-                                          ? FontWeight.bold
-                                          : FontWeight.w500,
-                                      color: isActive
-                                          ? Colors.black
-                                          : (isDark
-                                                ? Colors.grey.shade300
-                                                : Colors.grey.shade600),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                  VenueCategoryFilter(
+                    categories: venuesProvider.categories,
+                    activeCategory: _activeCategory,
+                    onCategorySelected: (category) {
+                      setState(() => _activeCategory = category);
+                    },
                   ),
                 ],
               ),
@@ -751,234 +361,13 @@ class _VenueListScreenState extends State<VenueListScreen> {
                                       )
                                     : venue.distance;
 
-                                return _VenueCard(
+                                return VenueListItem(
                                   venue: venue,
                                   distance: distance,
                                 );
                               },
                             ),
                     ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VenueCard extends StatelessWidget {
-  final Venue venue;
-  final String distance;
-
-  const _VenueCard({required this.venue, required this.distance});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GestureDetector(
-      onTap: () => context.push('/venue/${venue.id}'),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withOpacity(0.05)
-                : Colors.grey.shade100,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Stack(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 192,
-                    child: CachedNetworkImage(
-                      imageUrl: venue.image,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        height: 192,
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFFFFD00B),
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        height: 192,
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.image, size: 64),
-                      ),
-                    ),
-                  ),
-                  if (venue.isPartner)
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFD00B),
-                          borderRadius: BorderRadius.circular(4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Text(
-                          'PARTNER',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Discount and Distance
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        venue.discount,
-                        style: const TextStyle(
-                          color: Color(0xFFFFD00B),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.near_me,
-                            size: 14,
-                            color: Colors.grey.shade500,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            distance,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  // Venue Name
-                  Text(
-                    venue.name,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  // Type • Price Level • Category
-                  Text(
-                    '${venue.type} • ${venue.priceLevel} • ${venue.category}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w300,
-                      color: isDark
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade500,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Divider
-                  Divider(
-                    height: 1,
-                    color: isDark
-                        ? Colors.white.withOpacity(0.1)
-                        : Colors.grey.shade100,
-                  ),
-                  const SizedBox(height: 12),
-                  // Rating and View Details
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            size: 14,
-                            color: Color(0xFFFFD00B),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            venue.rating.toStringAsFixed(1),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black,
-                            ),
-                          ),
-                          Text(
-                            ' (${venue.reviews})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'VIEW DETAILS',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.grey.shade700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
             ),
           ],
         ),
