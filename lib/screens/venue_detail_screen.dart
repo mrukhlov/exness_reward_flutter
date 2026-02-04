@@ -9,8 +9,7 @@ import '../widgets/venue_detail/venue_header_buttons.dart';
 import '../widgets/venue_detail/venue_title_section.dart';
 import '../widgets/venue_detail/venue_exclusive_offer.dart';
 import '../widgets/venue_detail/venue_contact_info.dart';
-import '../widgets/venue_detail/venue_about_section.dart';
-import '../widgets/venue_detail/venue_comments_section.dart';
+import '../widgets/venue_detail/venue_about_comments_section.dart';
 import '../widgets/venue_detail/venue_action_buttons.dart';
 
 class VenueDetailScreen extends StatefulWidget {
@@ -149,11 +148,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                         const SizedBox(height: 24),
                         VenueContactInfo(venue: venue, isDark: isDark),
                         const SizedBox(height: 24),
-                        VenueCommentsSection(venue: venue, isDark: isDark),
-                        if (venue.comments != null &&
-                            venue.comments!.isNotEmpty)
-                          const SizedBox(height: 24),
-                        VenueAboutSection(venue: venue, isDark: isDark),
+                        VenueAboutCommentsSection(venue: venue, isDark: isDark),
                         const SizedBox(height: 24),
                         VenueActionButtons(venueId: venue.id),
                         const SizedBox(height: 50),
