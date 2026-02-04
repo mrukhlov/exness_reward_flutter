@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class MapSearchBar extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final bool isDark;
   final String searchQuery;
   final Function(String) onSearchChanged;
@@ -9,6 +10,7 @@ class MapSearchBar extends StatelessWidget {
   const MapSearchBar({
     super.key,
     required this.controller,
+    this.focusNode,
     required this.isDark,
     required this.searchQuery,
     required this.onSearchChanged,
@@ -36,6 +38,7 @@ class MapSearchBar extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         style: TextStyle(
           color: isDark ? Colors.white : Colors.black,
           fontSize: 16,

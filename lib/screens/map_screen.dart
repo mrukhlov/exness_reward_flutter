@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/venue.dart';
 import '../providers/location_provider.dart';
@@ -29,6 +30,7 @@ class _MapScreenState extends State<MapScreen> {
   String _searchQuery = '';
   String? _selectedVenueId;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   // Map State
   UnifiedMapController? _mapController;
@@ -66,7 +68,15 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _hideKeyboardAndUnfocus() {
+    // Remove focus from search field
+    _searchFocusNode.unfocus();
+    // Hide keyboard
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
   }
 
   List<Venue> get _filteredVenues {
@@ -161,7 +171,10 @@ class _MapScreenState extends State<MapScreen> {
                       _currentLng = lng;
                       _currentZoom = zoom;
                     },
-                    onMapTap: () => setState(() => _selectedVenueId = null),
+                    onMapTap: () {
+                      _hideKeyboardAndUnfocus();
+                      setState(() => _selectedVenueId = null);
+                    },
                     onMapCreated: _onMapCreated,
                     initialLat: _currentLat, // Preserve position on rebuild
                     initialLng: _currentLng,
@@ -179,7 +192,10 @@ class _MapScreenState extends State<MapScreen> {
                       _currentLng = lng;
                       _currentZoom = zoom;
                     },
-                    onMapTap: () => setState(() => _selectedVenueId = null),
+                    onMapTap: () {
+                      _hideKeyboardAndUnfocus();
+                      setState(() => _selectedVenueId = null);
+                    },
                     onMapCreated: _onMapCreated,
                     initialLat: _currentLat,
                     initialLng: _currentLng,
@@ -203,6 +219,7 @@ class _MapScreenState extends State<MapScreen> {
                   children: [
                     MapSearchBar(
                       controller: _searchController,
+                      focusNode: _searchFocusNode,
                       isDark: isDark,
                       searchQuery: _searchQuery,
                       onSearchChanged: (val) =>
