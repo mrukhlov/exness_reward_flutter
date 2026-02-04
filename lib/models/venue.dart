@@ -19,6 +19,7 @@ class Venue {
   final String? address;
   final String? phone;
   final String? website;
+  final String? comments;
   final OpenHours? openHours;
 
   Venue({
@@ -42,6 +43,7 @@ class Venue {
     this.address,
     this.phone,
     this.website,
+    this.comments,
     this.openHours,
   });
 
@@ -81,6 +83,7 @@ class Venue {
       address: json['address'] as String?,
       phone: json['phone'] as String?,
       website: json['website'] as String?,
+      comments: json['comments'] as String?,
       openHours: json['openHours'] != null || json['open_hours'] != null
           ? OpenHours.fromJson(json['openHours'] ?? json['open_hours'])
           : null,
@@ -109,6 +112,7 @@ class Venue {
       'address': address,
       'phone': phone,
       'website': website,
+      'comments': comments,
       'openHours': openHours?.toJson(),
     };
   }
