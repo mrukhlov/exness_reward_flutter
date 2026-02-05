@@ -11,6 +11,7 @@ import 'providers/events_provider.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/invite_screen.dart';
 import 'screens/venue_list_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/events_screen.dart';
@@ -116,6 +117,10 @@ GoRouter _createRouter(BuildContext context) {
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
+      GoRoute(
+        path: '/invite',
+        builder: (context, state) => const InviteScreen(),
+      ),
       ShellRoute(
         builder: (context, state, child) => MainTabScaffold(child: child),
         routes: [
@@ -162,10 +167,15 @@ GoRouter _createRouter(BuildContext context) {
     redirect: (context, state) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final isAuthenticated = authProvider.isAuthenticated;
+      final matchedLocation = state.matchedLocation;
+
+      // Auth routes that should redirect authenticated users to /discover
       final isAuthRoute =
-          state.matchedLocation == '/welcome' ||
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
+          matchedLocation == '/welcome' ||
+          matchedLocation == '/login' ||
+          matchedLocation == '/register';
+
+      // /invite is accessible to authenticated users, so don't treat it as auth route
 
       if (authProvider.isLoading) {
         return null; // Still loading, don't redirect

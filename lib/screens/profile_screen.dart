@@ -90,13 +90,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   : Colors.grey.shade200,
                             ),
                           ),
-                          child: ProfileMenuItem(
-                            icon: Icons.favorite,
-                            title: 'Saved Places',
-                            subtitle: 'View your favorite spots',
-                            onTap: () => context.go('/saved-places'),
-                            isLast: true,
-                            isDark: isDark,
+                          child: Column(
+                            children: [
+                              ProfileMenuItem(
+                                icon: Icons.favorite,
+                                title: 'Saved Places',
+                                subtitle: 'View your favorite spots',
+                                onTap: () => context.go('/saved-places'),
+                                isLast: false,
+                                isDark: isDark,
+                              ),
+                              ProfileMenuItem(
+                                icon: Icons.person_add,
+                                title: 'Invite Partner',
+                                subtitle: 'Send invitation to your partner',
+                                onTap: () => context.go('/invite'),
+                                isLast: true,
+                                isDark: isDark,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 32),

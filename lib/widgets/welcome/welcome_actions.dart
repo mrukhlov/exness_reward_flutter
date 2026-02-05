@@ -42,7 +42,7 @@ class WelcomeActions extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Log In with email and password',
+                  'Log In with Email',
                   style: TextStyle(
                     fontSize: buttonTextSize,
                     fontWeight: FontWeight.bold,
@@ -54,7 +54,43 @@ class WelcomeActions extends StatelessWidget {
             ),
           ),
         ),
-        // SizedBox(height: isSmallScreen ? 10.0 : 12.0),
+        SizedBox(height: isSmallScreen ? 10.0 : 12.0),
+        SizedBox(
+          width: double.infinity,
+          height: buttonHeight,
+          child: OutlinedButton(
+            onPressed: () {
+              // TODO: Implement OKTA login
+              // For now, navigate to login screen
+              context.go('/login');
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: isDark ? Colors.white : Colors.black,
+              side: BorderSide(
+                color: isDark
+                    ? Colors.white.withOpacity(0.2)
+                    : Colors.grey.shade300,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Log In with OKTA',
+                  style: TextStyle(
+                    fontSize: buttonTextSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.login, size: buttonTextSize),
+              ],
+            ),
+          ),
+        ),
         // SizedBox(
         //   width: double.infinity,
         //   height: buttonHeight,

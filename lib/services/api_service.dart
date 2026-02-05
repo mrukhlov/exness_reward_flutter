@@ -18,9 +18,7 @@ class ApiService {
   }
 
   Future<Map<String, String>> _getHeaders({bool isAuthCheck = false}) async {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
 
     final token = await _getAuthToken();
     if (token != null) {
@@ -110,10 +108,7 @@ class ApiService {
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: {
-        'username': email,
-        'password': password,
-      },
+      body: {'username': email, 'password': password},
     );
 
     if (response.statusCode != 200) {
@@ -129,15 +124,14 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> register(
-      String email, String password, String fullName) async {
+    String email,
+    String password,
+    String fullName,
+  ) async {
     final response = await _request(
       ApiConfig.register,
       method: 'POST',
-      body: {
-        'email': email,
-        'password': password,
-        'full_name': fullName,
-      },
+      body: {'email': email, 'password': password, 'full_name': fullName},
     );
     return jsonDecode(response.body);
   }
@@ -227,17 +221,11 @@ class ApiService {
   }
 
   Future<void> addFavorite(String venueId) async {
-    await _request(
-      '${ApiConfig.favorites}/$venueId',
-      method: 'POST',
-    );
+    await _request('${ApiConfig.favorites}/$venueId', method: 'POST');
   }
 
   Future<void> removeFavorite(String venueId) async {
-    await _request(
-      '${ApiConfig.favorites}/$venueId',
-      method: 'DELETE',
-    );
+    await _request('${ApiConfig.favorites}/$venueId', method: 'DELETE');
   }
 
   // Events API
@@ -265,5 +253,9 @@ class ApiService {
     final response = await _request('${ApiConfig.events}/$eventId');
     return Event.fromJson(jsonDecode(response.body));
   }
-}
 
+  // Invite API
+  Future<void> sendInvite(String email) async {
+    await _request(ApiConfig.invite, method: 'POST', body: {'email': email});
+  }
+}
