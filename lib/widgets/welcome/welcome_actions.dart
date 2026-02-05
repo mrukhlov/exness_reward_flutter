@@ -54,32 +54,32 @@ class WelcomeActions extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: isSmallScreen ? 10.0 : 12.0),
-        SizedBox(
-          width: double.infinity,
-          height: buttonHeight,
-          child: OutlinedButton(
-            onPressed: () => context.go('/register'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: isDark ? Colors.white : Colors.black,
-              side: BorderSide(
-                color: isDark
-                    ? Colors.white.withOpacity(0.2)
-                    : Colors.grey.shade300,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Create Account',
-              style: TextStyle(
-                fontSize: buttonTextSize,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
+        // SizedBox(height: isSmallScreen ? 10.0 : 12.0),
+        // SizedBox(
+        //   width: double.infinity,
+        //   height: buttonHeight,
+        //   child: OutlinedButton(
+        //     onPressed: () => context.go('/register'),
+        //     style: OutlinedButton.styleFrom(
+        //       foregroundColor: isDark ? Colors.white : Colors.black,
+        //       side: BorderSide(
+        //         color: isDark
+        //             ? Colors.white.withOpacity(0.2)
+        //             : Colors.grey.shade300,
+        //       ),
+        //       shape: RoundedRectangleBorder(
+        //         borderRadius: BorderRadius.circular(12),
+        //       ),
+        //     ),
+        //     child: Text(
+        //       'Create Account',
+        //       style: TextStyle(
+        //         fontSize: buttonTextSize,
+        //         fontWeight: FontWeight.bold,
+        //       ),
+        //     ),
+        //   ),
+        // ),
         SizedBox(height: isSmallScreen ? 16.0 : 20.0),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,

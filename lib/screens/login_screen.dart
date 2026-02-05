@@ -190,33 +190,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 40),
                     // Footer link with yellow
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 40),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Don't have an account? ",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isDark
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade600,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => context.go('/register'),
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(
-                                color: yellowColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Padding(
+                    //   padding: const EdgeInsets.only(bottom: 40),
+                    //   child: Row(
+                    //     mainAxisAlignment: MainAxisAlignment.center,
+                    //     children: [
+                    //       Text(
+                    //         "Don't have an account? ",
+                    //         style: TextStyle(
+                    //           fontSize: 14,
+                    //           color: isDark
+                    //               ? Colors.grey.shade400
+                    //               : Colors.grey.shade600,
+                    //         ),
+                    //       ),
+                    //       TextButton(
+                    //         onPressed: () => context.go('/register'),
+                    //         child: const Text(
+                    //           'Sign Up',
+                    //           style: TextStyle(
+                    //             color: yellowColor,
+                    //             fontWeight: FontWeight.bold,
+                    //           ),
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
