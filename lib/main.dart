@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
@@ -58,7 +57,9 @@ class MyApp extends StatelessWidget {
           return Consumer<ThemeProvider>(
             builder: (context, themeProvider, _) {
               return MaterialApp.router(
-                key: ValueKey(themeProvider.themeMode), // Key to force rebuild on theme change
+                key: ValueKey(
+                  themeProvider.themeMode,
+                ), // Key to force rebuild on theme change
                 title: 'Exness Rewards',
                 debugShowCheckedModeBanner: false,
                 theme: ThemeData(
@@ -68,8 +69,12 @@ class MyApp extends StatelessWidget {
                     seedColor: const Color(0xFFFFD00B),
                     brightness: Brightness.light,
                   ),
-                  textTheme: GoogleFonts.manropeTextTheme(),
-                  appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+                  fontFamily: 'Manrope',
+                  textTheme: const TextTheme().apply(fontFamily: 'Manrope'),
+                  appBarTheme: const AppBarTheme(
+                    centerTitle: false,
+                    elevation: 0,
+                  ),
                 ),
                 darkTheme: ThemeData(
                   useMaterial3: true,
@@ -78,10 +83,14 @@ class MyApp extends StatelessWidget {
                     seedColor: const Color(0xFFFFD00B),
                     brightness: Brightness.dark,
                   ),
-                  textTheme: GoogleFonts.manropeTextTheme(
-                    ThemeData.dark().textTheme,
+                  fontFamily: 'Manrope',
+                  textTheme: ThemeData.dark().textTheme.apply(
+                    fontFamily: 'Manrope',
                   ),
-                  appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+                  appBarTheme: const AppBarTheme(
+                    centerTitle: false,
+                    elevation: 0,
+                  ),
                 ),
                 themeMode: themeProvider.themeMode,
                 routerConfig: router,
@@ -230,9 +239,9 @@ class MainTabScaffold extends StatelessWidget {
                 );
                 if (eventsProvider.hasBeenVisited &&
                     eventsProvider.lastSelectedDate != null) {
-                  final selectedDateStr = DateFormat('yyyy-MM-dd').format(
-                    eventsProvider.lastSelectedDate!,
-                  );
+                  final selectedDateStr = DateFormat(
+                    'yyyy-MM-dd',
+                  ).format(eventsProvider.lastSelectedDate!);
                   context.go('/events?selectedDate=$selectedDateStr');
                 } else {
                   context.go('/events');
@@ -290,11 +299,7 @@ class _BottomNavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 26,
-              color: color,
-            ),
+            Icon(icon, size: 26, color: color),
             const SizedBox(height: 4),
             Text(
               label,

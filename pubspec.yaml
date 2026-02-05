@@ -76,4 +76,8 @@ flutter:
     - assets/images/
     - assets/images/logo.jpg
 
-  # Note: Fonts are loaded via google_fonts package, no local font files needed
+  # Fonts
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-VariableFont_wght.ttf
