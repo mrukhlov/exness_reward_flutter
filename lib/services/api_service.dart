@@ -6,6 +6,7 @@ import '../models/venue.dart';
 import '../models/user.dart';
 import '../models/event.dart';
 import '../models/venue_category.dart';
+import '../models/invite.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -257,5 +258,15 @@ class ApiService {
   // Invite API
   Future<void> sendInvite(String email) async {
     await _request(ApiConfig.invite, method: 'POST', body: {'email': email});
+  }
+
+  Future<List<Invite>> getMyInvites() async {
+    final response = await _request(ApiConfig.myInvites);
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.map((json) => Invite.fromJson(json)).toList();
+  }
+
+  Future<void> revokeInvite(String inviteId) async {
+    await _request(ApiConfig.revokeInvite(inviteId), method: 'DELETE');
   }
 }

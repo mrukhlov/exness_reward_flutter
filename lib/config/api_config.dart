@@ -13,7 +13,7 @@
 
 class ApiConfig {
   // Backend API URL - GCP Compute Engine instance
-  static const String baseUrl = 'http://http://34.46.123.38:8000';
+  static const String baseUrl = 'http://34.46.123.38:8000';
 
   // Alternative: Use environment variables
   // static const String baseUrl = const String.fromEnvironment(
@@ -26,6 +26,8 @@ class ApiConfig {
   static const String register = '/auth/register';
   static const String me = '/auth/me';
   static const String invite = '/invite';
+  static const String myInvites = '/invite';
+  static String revokeInvite(String inviteId) => '/invite/$inviteId';
   static const String venues = '/venues';
   static const String venuesCategories = '/venues/categories';
   static const String venuesGrouped = '/venues/grouped';
