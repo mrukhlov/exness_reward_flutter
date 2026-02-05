@@ -42,7 +42,7 @@ class WelcomeActions extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Log In',
+                  'Log In with email and password',
                   style: TextStyle(
                     fontSize: buttonTextSize,
                     fontWeight: FontWeight.bold,
