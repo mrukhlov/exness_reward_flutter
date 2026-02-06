@@ -28,7 +28,7 @@ class InviteStats extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
-            'Invites: $totalActiveInvitesCount/2 ($pendingCount pending, $acceptedCount accepted)',
+            'Invites: $totalActiveInvitesCount/2',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,

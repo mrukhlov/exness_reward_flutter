@@ -149,12 +149,12 @@ class InviteCard extends StatelessWidget {
                       tooltip: 'Revoke invite',
                     ),
                   // Copy URL button (show for all invites except revoked)
-                  if (!invite.revoked)
-                    IconButton(
-                      icon: const Icon(Icons.copy, color: Colors.blue),
-                      onPressed: onCopyUrl,
-                      tooltip: 'Copy invite link',
-                    ),
+                  // if (!invite.revoked)
+                  //   IconButton(
+                  //     icon: const Icon(Icons.copy, color: Colors.blue),
+                  //     onPressed: onCopyUrl,
+                  //     tooltip: 'Copy invite link',
+                  //   ),
                 ],
               ),
             ],
