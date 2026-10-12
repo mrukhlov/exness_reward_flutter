@@ -1,17 +1,35 @@
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:apple_maps_flutter/apple_maps_flutter.dart' as apple_maps;
 import 'category_icons.dart';
+
+/// Canvas size for Google/cluster marker bitmaps.
+/// Web maps the PNG 1:1 in CSS pixels, so native 80px pins look huge there.
+double googleMarkerCanvasSize() => kIsWeb ? 36.0 : 80.0;
+
+double googleMarkerGlyphSize({required bool isSelected}) {
+  if (kIsWeb) return isSelected ? 20.0 : 16.0;
+  return isSelected ? 50.0 : 38.0;
+}
+
+double clusterMarkerCanvasSize() => googleMarkerCanvasSize();
+
+double clusterMarkerFontSize(int count) {
+  if (kIsWeb) return count < 10 ? 14.0 : 12.0;
+  return count < 10 ? 28.0 : 24.0;
+}
 
 /// Creates a custom marker icon for Google Maps
 /// Matches the React Native design: circular with category icon
 Future<gmaps.BitmapDescriptor> createCustomMarkerIcon({
   required String category,
   required bool isSelected,
-  double size = 80.0, // Increased from 42.0 to make markers bigger
+  double? size,
 }) async {
-  final iconSize = isSelected ? 50.0 : 38.0; // Increased proportionally (was 28.0/20.0)
+  size ??= googleMarkerCanvasSize();
+  final iconSize = googleMarkerGlyphSize(isSelected: isSelected);
 
   // Background color: yellow if selected, white if not
   final backgroundColor = isSelected

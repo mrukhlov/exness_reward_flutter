@@ -1,12 +1,14 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 import '../models/venue.dart';
 import '../providers/location_provider.dart';
 import '../providers/venues_provider.dart';
 import '../providers/theme_provider.dart';
+import '../utils/app_platform.dart';
 import '../widgets/map/map_search_bar.dart';
 import '../widgets/map/category_filter_list.dart';
 import '../widgets/map/venue_detail_card.dart';
@@ -131,6 +133,12 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Widget _webOverlay(Widget child) {
+    // HtmlElementView maps steal mouse events from Flutter overlays on web.
+    if (kIsWeb) return PointerInterceptor(child: child);
+    return child;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -157,8 +165,10 @@ class _MapScreenState extends State<MapScreen> {
           Positioned.fill(
             child: Consumer<ThemeProvider>(
               builder: (context, themeProvider, _) {
+                // Apple Maps is iOS-only. Web uses Google Maps JS even on
+                // iPhone Safari, where defaultTargetPlatform is iOS.
                 final useAppleMaps =
-                    Platform.isIOS && themeProvider.useAppleMaps;
+                    AppPlatform.isIOS && themeProvider.useAppleMaps;
 
                 if (useAppleMaps) {
                   return AppleMapView(
@@ -212,27 +222,29 @@ class _MapScreenState extends State<MapScreen> {
             top: 0,
             left: 0,
             right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                child: Column(
-                  children: [
-                    MapSearchBar(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      isDark: isDark,
-                      searchQuery: _searchQuery,
-                      onSearchChanged: (val) =>
-                          setState(() => _searchQuery = val),
-                    ),
-                    const SizedBox(height: 12),
-                    CategoryFilterList(
-                      activeCategory: _activeCategory,
-                      isDark: isDark,
-                      onCategorySelected: (cat) =>
-                          setState(() => _activeCategory = cat),
-                    ),
-                  ],
+            child: _webOverlay(
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  child: Column(
+                    children: [
+                      MapSearchBar(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        isDark: isDark,
+                        searchQuery: _searchQuery,
+                        onSearchChanged: (val) =>
+                            setState(() => _searchQuery = val),
+                      ),
+                      const SizedBox(height: 12),
+                      CategoryFilterList(
+                        activeCategory: _activeCategory,
+                        isDark: isDark,
+                        onCategorySelected: (cat) =>
+                            setState(() => _activeCategory = cat),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -245,11 +257,13 @@ class _MapScreenState extends State<MapScreen> {
                 ? MediaQuery.of(context).padding.bottom +
                       300 // Above venue detail card
                 : 200, // Default position
-            child: MapActionControls(
-              isDark: isDark,
-              onZoomIn: () => _mapController?.zoomIn(),
-              onZoomOut: () => _mapController?.zoomOut(),
-              onMyLocation: _onMyLocation,
+            child: _webOverlay(
+              MapActionControls(
+                isDark: isDark,
+                onZoomIn: () => _mapController?.zoomIn(),
+                onZoomOut: () => _mapController?.zoomOut(),
+                onMyLocation: _onMyLocation,
+              ),
             ),
           ),
 
@@ -259,7 +273,9 @@ class _MapScreenState extends State<MapScreen> {
               bottom: MediaQuery.of(context).padding.bottom + 15,
               left: 16,
               right: 16,
-              child: VenueDetailCard(venue: selectedVenue, isDark: isDark),
+              child: _webOverlay(
+                VenueDetailCard(venue: selectedVenue, isDark: isDark),
+              ),
             ),
         ],
       ),

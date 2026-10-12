@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import '../models/venue.dart';
+import 'marker_helper.dart';
 
 /// Cluster data class to represent a group of venues
 class Cluster {
@@ -75,7 +76,7 @@ class ClusteringHelper {
 
   /// Create a cluster marker icon with count
   static Future<gmaps.BitmapDescriptor> createClusterIcon(int count) async {
-    final size = 80.0; // Increased to match individual marker size
+    final size = clusterMarkerCanvasSize();
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
@@ -103,7 +104,7 @@ class ClusteringHelper {
 
     // Draw count text
     final textStyle = TextStyle(
-      fontSize: count < 10 ? 28.0 : 24.0,
+      fontSize: clusterMarkerFontSize(count),
       fontWeight: FontWeight.bold,
       color: Colors.black,
     );

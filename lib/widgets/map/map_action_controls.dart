@@ -1,7 +1,7 @@
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../utils/app_platform.dart';
 
 class MapActionControls extends StatelessWidget {
   final bool isDark;
@@ -58,7 +58,7 @@ class MapActionControls extends StatelessWidget {
         Consumer<ThemeProvider>(
           builder: (context, themeProvider, _) {
             // Only show theme toggle when using Google Maps AND custom map style is enabled
-            if (Platform.isIOS && themeProvider.useAppleMaps) {
+            if (AppPlatform.isIOS && themeProvider.useAppleMaps) {
               return const SizedBox.shrink();
             }
             if (!themeProvider.useCustomMapStyle) {
@@ -77,7 +77,7 @@ class MapActionControls extends StatelessWidget {
         ),
 
         // Map Provider Toggle (iOS only)
-        if (Platform.isIOS)
+        if (AppPlatform.isIOS)
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, _) {
               return _buildControl(

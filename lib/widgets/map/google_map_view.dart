@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:provider/provider.dart';
@@ -62,6 +63,17 @@ class _GoogleMapViewState extends State<GoogleMapView>
     _currentZoom = widget.initialZoom;
     _lastZoomLevel = widget.initialZoom.round();
 
+    _loadMarkerIcons();
+    _preloadClusterIcons();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    MarkerCache().clear();
+    _markerIcons.clear();
+    _clusterIconsByCount.clear();
+    _markersReady = false;
     _loadMarkerIcons();
     _preloadClusterIcons();
   }
@@ -144,11 +156,20 @@ class _GoogleMapViewState extends State<GoogleMapView>
     }
   }
 
+  gmaps.BitmapDescriptor _fallbackMarker({required bool selected}) {
+    // defaultMarkerWithHue is not implemented on web.
+    if (kIsWeb) {
+      return gmaps.BitmapDescriptor.defaultMarker;
+    }
+    return gmaps.BitmapDescriptor.defaultMarkerWithHue(
+      selected
+          ? gmaps.BitmapDescriptor.hueYellow
+          : gmaps.BitmapDescriptor.hueRed,
+    );
+  }
+
   gmaps.BitmapDescriptor _getClusterIcon(int count) {
-    return _clusterIconsByCount[count] ??
-        gmaps.BitmapDescriptor.defaultMarkerWithHue(
-          gmaps.BitmapDescriptor.hueYellow,
-        );
+    return _clusterIconsByCount[count] ?? _fallbackMarker(selected: true);
   }
 
   Set<gmaps.Marker> _buildMarkers() {
@@ -170,12 +191,7 @@ class _GoogleMapViewState extends State<GoogleMapView>
         final iconKey = '${category}_${isSelected ? 'selected' : 'unselected'}';
 
         final icon =
-            _markerIcons[iconKey] ??
-            gmaps.BitmapDescriptor.defaultMarkerWithHue(
-              isSelected
-                  ? gmaps.BitmapDescriptor.hueYellow
-                  : gmaps.BitmapDescriptor.hueRed,
-            );
+            _markerIcons[iconKey] ?? _fallbackMarker(selected: isSelected);
 
         markers.add(
           gmaps.Marker(
@@ -390,11 +406,13 @@ class _GoogleMapViewState extends State<GoogleMapView>
         }
       },
       onTap: (_) => widget.onMapTap(),
-      myLocationEnabled: true,
+      myLocationEnabled: !kIsWeb,
       myLocationButtonEnabled: false,
       zoomControlsEnabled: false,
       mapToolbarEnabled: false,
       compassEnabled: false,
+      webCameraControlEnabled: false,
+      webGestureHandling: gmaps.WebGestureHandling.greedy,
       onCameraMove: (position) {
         _currentLat = position.target.latitude;
         _currentLng = position.target.longitude;

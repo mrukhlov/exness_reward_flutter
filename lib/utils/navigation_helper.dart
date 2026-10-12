@@ -1,7 +1,7 @@
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/venue.dart';
+import 'app_platform.dart';
 
 class NavigationHelper {
   static Future<void> openDirections(BuildContext context, Venue venue) async {
@@ -13,7 +13,7 @@ class NavigationHelper {
       Uri url;
       bool launched = false;
 
-      if (Platform.isAndroid) {
+      if (AppPlatform.isAndroid) {
         // Android: Try multiple URL schemes
         // 1. Try Google Maps navigation (most common)
         url = Uri.parse('google.navigation:q=$lat,$lng');
@@ -49,7 +49,7 @@ class NavigationHelper {
           );
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
-      } else if (Platform.isIOS) {
+      } else if (AppPlatform.isIOS) {
         // iOS: Prioritize Google Maps app, then fallback to Apple Maps or web
         // 1. Try Google Maps iOS app first (preferred)
         final googleMapsUrl = Uri.parse(

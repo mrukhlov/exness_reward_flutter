@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:apple_maps_flutter/apple_maps_flutter.dart' as apple_maps;
 import 'marker_helper.dart';
@@ -21,10 +22,25 @@ class MarkerCache {
   apple_maps.BitmapDescriptor? _blueUserMarkerIcon;
 
   bool _isPreloaded = false;
+  // Bump when marker pixel sizes change so hot reload drops stale bitmaps.
+  static const int _sizeEpoch = 1;
+  int _loadedSizeEpoch = -1;
+
+  void _invalidateIfSizeChanged() {
+    if (_loadedSizeEpoch == _sizeEpoch) return;
+    _googleMarkersSelected.clear();
+    _googleMarkersUnselected.clear();
+    _appleMarkersSelected.clear();
+    _appleMarkersUnselected.clear();
+    _blueUserMarkerIcon = null;
+    _isPreloaded = false;
+    _loadedSizeEpoch = _sizeEpoch;
+  }
 
   /// Preload markers for all categories
   /// Should be called once when categories are fetched
   Future<void> preloadMarkers(List<String> categories) async {
+    _invalidateIfSizeChanged();
     if (_isPreloaded) return;
 
     try {
@@ -44,19 +60,22 @@ class MarkerCache {
         }
       }
 
-      // Preload Apple Maps markers
-      for (final category in categories) {
-        if (!_appleMarkersSelected.containsKey(category)) {
-          _appleMarkersSelected[category] = await createCustomAppleMarkerIcon(
-            category: category,
-            isSelected: true,
-          );
-        }
-        if (!_appleMarkersUnselected.containsKey(category)) {
-          _appleMarkersUnselected[category] = await createCustomAppleMarkerIcon(
-            category: category,
-            isSelected: false,
-          );
+      // Apple Maps is iOS-only; skip on web/Android.
+      if (!kIsWeb) {
+        for (final category in categories) {
+          if (!_appleMarkersSelected.containsKey(category)) {
+            _appleMarkersSelected[category] = await createCustomAppleMarkerIcon(
+              category: category,
+              isSelected: true,
+            );
+          }
+          if (!_appleMarkersUnselected.containsKey(category)) {
+            _appleMarkersUnselected[category] =
+                await createCustomAppleMarkerIcon(
+                  category: category,
+                  isSelected: false,
+                );
+          }
         }
       }
 
@@ -73,8 +92,9 @@ class MarkerCache {
     String category,
     bool isSelected,
   ) async {
+    _invalidateIfSizeChanged();
     final cache = isSelected ? _googleMarkersSelected : _googleMarkersUnselected;
-    
+
     if (cache.containsKey(category)) {
       return cache[category]!;
     }
@@ -127,6 +147,7 @@ class MarkerCache {
     _appleMarkersUnselected.clear();
     _blueUserMarkerIcon = null;
     _isPreloaded = false;
+    _loadedSizeEpoch = -1;
   }
 
   /// Check if markers are preloaded
