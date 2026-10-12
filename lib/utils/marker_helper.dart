@@ -216,3 +216,39 @@ Future<apple_maps.BitmapDescriptor> createBlueUserLocationMarker({
 
   return apple_maps.BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
 }
+
+/// Blue "you are here" pin for Google Maps (used on web; native SDK has its own).
+Future<gmaps.BitmapDescriptor> createGoogleUserLocationMarker({
+  double? size,
+}) async {
+  size ??= kIsWeb ? 18.0 : 40.0;
+  const backgroundColor = Color(0xFF2196F3);
+
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+
+  final center = Offset(size / 2, size / 2);
+  final radius = size / 2 - 1;
+
+  final shadowPaint = Paint()
+    ..color = Colors.black.withOpacity(0.2)
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+  canvas.drawCircle(center, radius, shadowPaint);
+
+  final fillPaint = Paint()
+    ..color = backgroundColor
+    ..style = PaintingStyle.fill;
+  canvas.drawCircle(center, radius, fillPaint);
+
+  final ringPaint = Paint()
+    ..color = Colors.white
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.0;
+  canvas.drawCircle(center, radius - 1, ringPaint);
+
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(size.toInt(), size.toInt());
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+
+  return gmaps.BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+}

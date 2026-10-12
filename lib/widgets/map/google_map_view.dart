@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import '../../models/venue.dart';
 import '../../utils/marker_cache.dart';
 import '../../utils/clustering_helper.dart';
+import '../../utils/marker_helper.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/location_provider.dart';
 import 'unified_map_controller.dart';
 
 class GoogleMapView extends StatefulWidget {
@@ -54,6 +56,7 @@ class _GoogleMapViewState extends State<GoogleMapView>
   final Map<int, gmaps.BitmapDescriptor> _clusterIconsByCount = {};
   final MarkerCache _markerCache = MarkerCache();
   bool _markersReady = false;
+  gmaps.BitmapDescriptor? _userLocationIcon;
 
   @override
   void initState() {
@@ -65,6 +68,7 @@ class _GoogleMapViewState extends State<GoogleMapView>
 
     _loadMarkerIcons();
     _preloadClusterIcons();
+    _loadUserLocationIcon();
   }
 
   @override
@@ -74,8 +78,21 @@ class _GoogleMapViewState extends State<GoogleMapView>
     _markerIcons.clear();
     _clusterIconsByCount.clear();
     _markersReady = false;
+    _userLocationIcon = null;
     _loadMarkerIcons();
     _preloadClusterIcons();
+    _loadUserLocationIcon();
+  }
+
+  Future<void> _loadUserLocationIcon() async {
+    try {
+      final icon = await createGoogleUserLocationMarker();
+      if (mounted) {
+        setState(() => _userLocationIcon = icon);
+      }
+    } catch (e) {
+      debugPrint('Error loading user location icon: $e');
+    }
   }
 
   @override
@@ -174,6 +191,32 @@ class _GoogleMapViewState extends State<GoogleMapView>
 
   Set<gmaps.Marker> _buildMarkers() {
     final markers = <gmaps.Marker>{};
+
+    // Native Google Maps draws its own blue dot. Web ignores myLocationEnabled.
+    if (kIsWeb) {
+      final locationProvider = Provider.of<LocationProvider>(
+        context,
+        listen: false,
+      );
+      if (locationProvider.latitude != null &&
+          locationProvider.longitude != null) {
+        markers.add(
+          gmaps.Marker(
+            markerId: const gmaps.MarkerId('user_location'),
+            position: gmaps.LatLng(
+              locationProvider.latitude!,
+              locationProvider.longitude!,
+            ),
+            icon:
+                _userLocationIcon ??
+                gmaps.BitmapDescriptor.defaultMarker,
+            zIndexInt: 20,
+            consumeTapEvents: true,
+          ),
+        );
+      }
+    }
+
     if (!_markersReady) return markers;
 
     final clusters = ClusteringHelper.createClusters(
@@ -390,6 +433,8 @@ class _GoogleMapViewState extends State<GoogleMapView>
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    // Rebuild when GPS coordinates arrive so the web user-location pin appears.
+    context.watch<LocationProvider>();
 
     return gmaps.GoogleMap(
       key: ValueKey('google_map_view'),

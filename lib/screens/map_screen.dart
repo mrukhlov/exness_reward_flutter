@@ -118,17 +118,33 @@ class _MapScreenState extends State<MapScreen> {
     } catch (_) {}
   }
 
-  void _onMyLocation() async {
+  Future<void> _onMyLocation() async {
     final locationProvider = Provider.of<LocationProvider>(
       context,
       listen: false,
     );
+    // Web browsers only prompt for geolocation from a user gesture.
+    if (kIsWeb ||
+        locationProvider.latitude == null ||
+        locationProvider.longitude == null) {
+      await locationProvider.refreshLocation();
+    }
+    if (!mounted) return;
     if (locationProvider.latitude != null &&
         locationProvider.longitude != null) {
-      _mapController?.animateTo(
+      await _mapController?.animateTo(
         locationProvider.latitude!,
         locationProvider.longitude!,
         15.0,
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            locationProvider.error ??
+                'Could not get your location. Allow location access in the browser.',
+          ),
+        ),
       );
     }
   }

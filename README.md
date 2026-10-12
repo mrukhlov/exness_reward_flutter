@@ -29,6 +29,23 @@ flutter pub get
 flutter run --dart-define=API_URL=http://localhost:8000
 ```
 
+### Host web build on the shared VPS (`/app/`)
+
+```bash
+flutter build web --release --base-href /app/
+```
+
+Copy `build/web/` to `/var/www/reward_flutter/` on `217.217.227.183`. restk nginx serves it from the drop-in `/etc/nginx/conf.d/exness-reward.conf`:
+
+```nginx
+location /app/ {
+    alias /var/www/reward_flutter/;
+    index index.html;
+}
+```
+
+CMS stays at `http://217.217.227.183/`. The Flutter app is `http://217.217.227.183/app/`. Hash routes (`#/map`) do not need SPA `try_files`.
+
 3. **Configure Google Maps API Key (Required for iOS):**
    
    ⚠️ **Security Best Practice**: Never commit API keys to version control!

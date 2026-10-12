@@ -46,7 +46,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>GMS_API_KEY</key>
-	<string>AIzaSyAwk3uTiaCk-EL2jOZaToZdvfafClpIteI</string>
+	<string>AIzaSyDsVuzPStiVsKKDSJTDt-XW0TdyTdI6rAk</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app needs access to your location to show nearby venues and provide directions.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

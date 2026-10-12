@@ -19,37 +19,51 @@ class LocationProvider with ChangeNotifier {
 
   Future<void> _getCurrentLocation() async {
     try {
-      // Check if location services are enabled
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _error = 'Location services are disabled';
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      // Check location permissions
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _error = 'Permission to access location was denied';
-          _isLoading = false;
-          notifyListeners();
+      if (!kIsWeb) {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          _error = 'Location services are disabled';
           return;
         }
       }
 
-      if (permission == LocationPermission.deniedForever) {
-        _error = 'Location permissions are permanently denied';
-        _isLoading = false;
-        notifyListeners();
+      LocationPermission permission = LocationPermission.denied;
+      try {
+        permission = await Geolocator.checkPermission();
+      } catch (e) {
+        debugPrint('Location checkPermission failed: $e');
+      }
+
+      if (permission == LocationPermission.denied) {
+        try {
+          permission = await Geolocator.requestPermission();
+        } catch (e) {
+          debugPrint('Location requestPermission failed: $e');
+        }
+      }
+
+      if (!kIsWeb &&
+          (permission == LocationPermission.denied ||
+              permission == LocationPermission.deniedForever)) {
+        _error = 'Permission to access location was denied';
         return;
       }
 
-      // Get current position
+      // Web needs WebSettings. LocationAccuracy.high often times out in
+      // desktop Chrome (no GPS). getCurrentPosition itself shows the prompt.
+      final locationSettings = kIsWeb
+          ? WebSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: const Duration(seconds: 15),
+              maximumAge: const Duration(minutes: 5),
+            )
+          : const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 15),
+            );
+
       _location = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: locationSettings,
       );
       _error = null;
     } catch (e) {
@@ -67,4 +81,3 @@ class LocationProvider with ChangeNotifier {
     await _getCurrentLocation();
   }
 }
-

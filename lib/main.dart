@@ -53,7 +53,22 @@ class MyApp extends StatelessWidget {
       ],
       child: Builder(
         builder: (context) {
-          // Get or create router once and reuse it
+          final authProvider = context.watch<AuthProvider>();
+          // Wait until the stored token is checked so hash URLs like
+          // `#/map` cannot render protected screens while unauthenticated.
+          if (authProvider.isLoading) {
+            return const MaterialApp(
+              debugShowCheckedModeBanner: false,
+              home: Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFFFD00B),
+                  ),
+                ),
+              ),
+            );
+          }
+
           final router = _getRouter(context);
           return Consumer<ThemeProvider>(
             builder: (context, themeProvider, _) {
@@ -105,8 +120,10 @@ class MyApp extends StatelessWidget {
 }
 
 GoRouter _createRouter(BuildContext context) {
+  final authProvider = Provider.of<AuthProvider>(context, listen: false);
   return GoRouter(
     initialLocation: '/welcome',
+    refreshListenable: authProvider,
     routes: [
       GoRoute(
         path: '/welcome',
@@ -165,27 +182,18 @@ GoRouter _createRouter(BuildContext context) {
       ),
     ],
     redirect: (context, state) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final isAuthenticated = authProvider.isAuthenticated;
-      final matchedLocation = state.matchedLocation;
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final location = state.matchedLocation;
+      final isPublicRoute =
+          location == '/welcome' ||
+          location == '/login' ||
+          location == '/register';
 
-      // Auth routes that should redirect authenticated users to /discover
-      final isAuthRoute =
-          matchedLocation == '/welcome' ||
-          matchedLocation == '/login' ||
-          matchedLocation == '/register';
-
-      // /invite is accessible to authenticated users, so don't treat it as auth route
-
-      if (authProvider.isLoading) {
-        return null; // Still loading, don't redirect
-      }
-
-      if (!isAuthenticated && !isAuthRoute) {
+      if (!auth.isAuthenticated && !isPublicRoute) {
         return '/welcome';
       }
 
-      if (isAuthenticated && isAuthRoute) {
+      if (auth.isAuthenticated && isPublicRoute) {
         return '/discover';
       }
 
