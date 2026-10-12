@@ -29,23 +29,6 @@ flutter pub get
 flutter run --dart-define=API_URL=http://localhost:8000
 ```
 
-### Host web build on the shared VPS (`/app/`)
-
-```bash
-flutter build web --release --base-href /app/
-```
-
-Copy `build/web/` to `/var/www/reward_flutter/` on `217.217.227.183`. restk nginx serves it from the drop-in `/etc/nginx/conf.d/exness-reward.conf`:
-
-```nginx
-location /app/ {
-    alias /var/www/reward_flutter/;
-    index index.html;
-}
-```
-
-CMS stays at `http://217.217.227.183/`. The Flutter app is `http://217.217.227.183/app/`. Hash routes (`#/map`) do not need SPA `try_files`.
-
 3. **Configure Google Maps API Key (Required for iOS):**
    
    ⚠️ **Security Best Practice**: Never commit API keys to version control!
@@ -82,6 +65,80 @@ CMS stays at `http://217.217.227.183/`. The Flutter app is `http://217.217.227.1
 ```bash
 flutter run
 ```
+
+Local web:
+
+```bash
+flutter run -d chrome
+```
+
+## Deploy the web app
+
+`flutter build web` produces a static site in `build/web/`. Serve that folder with nginx, Caddy, or any static host. The default API URL is already `http://217.217.227.183/api`; override only if the backend is elsewhere.
+
+### Build
+
+Root of the site (`/`):
+
+```bash
+cd reward_flutter
+flutter pub get
+flutter build web --release
+```
+
+On the shared VPS the CMS already occupies `/`, so build with a subpath:
+
+```bash
+flutter build web --release --base-href /app/
+```
+
+`--base-href` must match the public URL path and end with `/`.
+
+To point at another API:
+
+```bash
+flutter build web --release --base-href /app/ --dart-define=API_URL=https://your.domain/api
+```
+
+### Host on the shared VPS (`/app/`)
+
+Copy `build/web/` to `/var/www/reward_flutter/` on `217.217.227.183`. restk nginx serves it from the drop-in `/etc/nginx/conf.d/exness-reward.conf`:
+
+```nginx
+location /app/ {
+    alias /var/www/reward_flutter/;
+    index index.html;
+}
+```
+
+Reload nginx after installing or changing the drop-in. Do not overwrite the CMS `dist`.
+
+- CMS: `http://217.217.227.183/`
+- Flutter app: `http://217.217.227.183/app/`
+
+The app uses hash routes (`#/map`, `#/login`), so nginx does not need SPA `try_files`.
+
+Example upload:
+
+```bash
+scp -r build/web/* user@217.217.227.183:/var/www/reward_flutter/
+```
+
+After each deploy, hard-refresh the browser so `main.dart.js` is not served from cache.
+
+### Google Maps (web)
+
+Web uses the Maps **JavaScript** API, not the iOS/Android SDKs. The script tag lives in `web/index.html`.
+
+1. Enable **Maps JavaScript API** on the key.
+2. If the key is HTTP-referrer restricted, allow `http://217.217.227.183/*` and `http://localhost:*`.
+3. Rebuild after changing `web/index.html` (hot reload does not update it).
+
+### HTTPS and geolocation
+
+The bundle currently calls `http://217.217.227.183/api`. A site served over HTTPS will block that (mixed content). Keep web and API on HTTP, or put both on HTTPS and rebuild with `--dart-define=API_URL=https://your.domain/api`.
+
+Browser geolocation also requires a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts): `localhost` or HTTPS. It will not work on plain `http://217.217.227.183`.
 
 ## Features
 
