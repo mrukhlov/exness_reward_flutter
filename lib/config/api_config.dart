@@ -1,25 +1,15 @@
 /// API Configuration
 ///
-/// Backend API Server: http://34.42.207.250:8000
+/// Production API is proxied at http://217.217.227.183/api/...
+/// (nginx strips `/api` and forwards to the FastAPI container).
 ///
-/// IMPORTANT: For Flutter development:
-/// - The backend is deployed on GCP Compute Engine
-/// - Use the public IP: http://34.42.207.250:8000
-/// - For local development, you can use 'http://localhost:8000' if running API locally
-///
-/// For iOS Simulator/Android Emulator:
-/// - Use the public IP: http://34.42.207.250:8000
-/// - Or use '10.0.2.2:8000' for Android Emulator if running API locally
-
+/// Override at build time:
+///   flutter run --dart-define=API_URL=http://localhost:8000
 class ApiConfig {
-  // Backend API URL - GCP Compute Engine instance
-  static const String baseUrl = 'http://34.46.123.38:8000';
-
-  // Alternative: Use environment variables
-  // static const String baseUrl = const String.fromEnvironment(
-  //   'API_URL',
-  //   defaultValue: 'http://34.42.207.250:8000',
-  // );
+  static const String baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'http://217.217.227.183/api',
+  );
 
   // API Endpoints
   static const String login = '/auth/login';

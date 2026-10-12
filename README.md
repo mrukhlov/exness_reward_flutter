@@ -23,9 +23,10 @@ lib/
 flutter pub get
 ```
 
-2. Configure API endpoint in `lib/config/api_config.dart`:
-```dart
-static const String baseUrl = 'http://34.42.207.250:8000';
+2. The app talks to the VPS API at `http://217.217.227.183/api` by default.
+   Override for local development:
+```bash
+flutter run --dart-define=API_URL=http://localhost:8000
 ```
 
 3. **Configure Google Maps API Key (Required for iOS):**
