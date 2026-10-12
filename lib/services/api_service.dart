@@ -124,6 +124,15 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
+  Future<Map<String, dynamic>> oktaLogin(String oktaToken) async {
+    final response = await _request(
+      ApiConfig.oktaLoginEndpoint,
+      method: 'POST',
+      body: {'token': oktaToken},
+    );
+    return jsonDecode(response.body);
+  }
+
   Future<Map<String, dynamic>> register(
     String email,
     String password,

@@ -33,4 +33,10 @@ class ApiConfig {
   static const String venuesGrouped = '/venues/grouped';
   static const String favorites = '/users/favorites';
   static const String events = '/events';
+
+  // Okta Configuration
+  static const String oktaIssuer = 'https://{yourOktaDomain}/oauth2/default';
+  static const String oktaClientId = '{clientId}';
+  static const String oktaRedirectUrl = 'com.exness.reward:/callback';
+  static const String oktaLoginEndpoint = '/auth/okta-login';
 }
