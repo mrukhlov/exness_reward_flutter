@@ -10,7 +10,7 @@ import GoogleMaps
   ) -> Bool {
     // Initialize Google Maps SDK BEFORE Flutter plugins
     // This is critical for Google Maps to work on iOS
-    let apiKey = "AIzaSyDML-Npp57CTcRpH7ZG2p5YlozGj6_haus"
+    let apiKey = Secrets.googleMapsAPIKey
     GMSServices.provideAPIKey(apiKey)
 
     let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
