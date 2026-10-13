@@ -1,15 +1,26 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 /// API Configuration
 ///
-/// Production API is proxied at http://217.217.227.183/api/...
-/// (nginx strips `/api` and forwards to the FastAPI container).
+/// Web (production): same-origin `/api` — works for https://rewards.myexlab.com/app
+/// and http://217.217.227.183/app without mixed-content issues.
 ///
-/// Override at build time:
+/// Mobile default: https://rewards.myexlab.com/api
+///
+/// Local dev override:
 ///   flutter run --dart-define=API_URL=http://localhost:8000
 class ApiConfig {
-  static const String baseUrl = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'http://217.217.227.183/api',
-  );
+  static const String _apiUrlFromEnvironment = String.fromEnvironment('API_URL');
+
+  static String get baseUrl {
+    if (_apiUrlFromEnvironment.isNotEmpty) {
+      return _apiUrlFromEnvironment;
+    }
+    if (kIsWeb) {
+      return '/api';
+    }
+    return 'https://rewards.myexlab.com/api';
+  }
 
   // API Endpoints
   static const String login = '/auth/login';
