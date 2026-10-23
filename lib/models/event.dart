@@ -6,6 +6,7 @@ class Event {
   final String startTime; // HH:MM format
   final String endTime; // HH:MM format
   final EventType type;
+  final EventAudience audience; // Meaningful for corporate events only
   final String color; // Hex color code
   final String location;
   final String address;
@@ -21,6 +22,7 @@ class Event {
     required this.startTime,
     required this.endTime,
     required this.type,
+    required this.audience,
     required this.color,
     required this.location,
     required this.address,
@@ -38,6 +40,7 @@ class Event {
       startTime: json['startTime'] as String? ?? json['start_time'] as String,
       endTime: json['endTime'] as String? ?? json['end_time'] as String,
       type: _parseEventType(json['type']),
+      audience: _parseAudience(json['audience']),
       color: json['color'] as String? ?? '#3b82f6',
       location: json['location'] as String,
       address: json['address'] as String,
@@ -65,6 +68,12 @@ class Event {
     };
   }
 
+  static EventAudience _parseAudience(dynamic value) {
+    return value.toString().toLowerCase() == 'employee_only'
+        ? EventAudience.employeeOnly
+        : EventAudience.plusOne;
+  }
+
   static EventType _parseEventType(dynamic value) {
     if (value == null) return EventType.corporate;
     final str = value.toString().toLowerCase();
@@ -73,3 +82,5 @@ class Event {
 }
 
 enum EventType { corporate, community }
+
+enum EventAudience { plusOne, employeeOnly }
