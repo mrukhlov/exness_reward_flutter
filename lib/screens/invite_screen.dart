@@ -168,7 +168,7 @@ class _InviteScreenState extends State<InviteScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Invite Partner',
+                    'Invite Spouse',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w500,

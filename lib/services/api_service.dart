@@ -257,7 +257,8 @@ class ApiService {
 
   // Invite API
   Future<void> sendInvite(String email) async {
-    await _request(ApiConfig.invite, method: 'POST', body: {'email': email});
+    await _request(ApiConfig.invite,
+        method: 'POST', body: {'email': email, 'role': 'Spouse'});
   }
 
   Future<List<Invite>> getMyInvites() async {
@@ -268,5 +269,26 @@ class ApiService {
 
   Future<void> revokeInvite(String inviteId) async {
     await _request(ApiConfig.revokeInvite(inviteId), method: 'DELETE');
+  }
+
+  // Venue requests API
+  Future<void> createVenueRequest({
+    required String name,
+    String? categoryId,
+    required String locationName,
+    required String address,
+    String? comment,
+  }) async {
+    await _request(
+      ApiConfig.venueRequests,
+      method: 'POST',
+      body: {
+        'name': name,
+        if (categoryId != null) 'category_id': categoryId,
+        'location_name': locationName,
+        'address': address,
+        if (comment != null) 'comment': comment,
+      },
+    );
   }
 }
