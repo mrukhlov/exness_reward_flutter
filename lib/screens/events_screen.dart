@@ -87,9 +87,9 @@ class _EventsScreenState extends State<EventsScreen> {
         eventsProvider.setLastSelectedDate(_selectedDate);
       }
 
-      if (eventsProvider.isStaleForMonth(_currentDate)) {
-        eventsProvider.fetchEventsForMonth(date: _currentDate);
-      }
+      // Always refresh on screen entry so CMS changes show up without waiting
+      // for the 5-minute staleness window
+      eventsProvider.fetchEventsForMonth(date: _currentDate);
     });
   }
 
