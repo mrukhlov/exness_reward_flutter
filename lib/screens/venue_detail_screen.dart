@@ -151,7 +151,6 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                         VenueAboutCommentsSection(venue: venue, isDark: isDark),
                         const SizedBox(height: 24),
                         VenueActionButtons(venueId: venue.id),
-                        const SizedBox(height: 50),
                       ],
                     ),
                   ),
