@@ -75,7 +75,12 @@ class _SuggestPlaceScreenState extends State<SuggestPlaceScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        context.pop();
+        // Opened via context.go, so pop may not be possible (see appBar back button)
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/profile');
+        }
       }
     } catch (_) {
       setState(() => _error = 'Failed to send suggestion. Please try again.');
