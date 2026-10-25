@@ -34,6 +34,7 @@ class ApiService {
     String method = 'GET',
     Map<String, dynamic>? body,
     bool isAuthCheck = false,
+    bool throwOnError = true,
   }) async {
     final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
     final headers = await _getHeaders(isAuthCheck: isAuthCheck);
@@ -70,7 +71,7 @@ class ApiService {
         print('[API] Response status: ${response.statusCode} for $url');
       }
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.statusCode >= 200 && response.statusCode < 300 || !throwOnError) {
         return response;
       }
 
@@ -272,7 +273,7 @@ class ApiService {
   }
 
   // Venue requests API
-  // Returns the HTTP status code: 201 = created, 200 = duplicate pending request
+  // Returns the HTTP status code: 201 = created, 409 = duplicate pending request
   Future<int> createVenueRequest({
     required String name,
     String? categoryId,
@@ -283,6 +284,7 @@ class ApiService {
     final response = await _request(
       ApiConfig.venueRequests,
       method: 'POST',
+      throwOnError: false,
       body: {
         'name': name,
         if (categoryId != null) 'category_id': categoryId,

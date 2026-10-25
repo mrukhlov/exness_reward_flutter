@@ -82,10 +82,12 @@ class _SuggestPlaceScreenState extends State<SuggestPlaceScreen> {
         } else {
           context.go('/profile');
         }
-      } else {
-        // 200 = duplicate pending request (deduped by name + address)
+      } else if (statusCode == 409) {
+        // Duplicate pending request (deduped by name + address)
         setState(() =>
             _error = 'This place has already been suggested and is pending review.');
+      } else {
+        throw Exception('Failed to send suggestion');
       }
     } catch (_) {
       setState(() => _error = 'Failed to send suggestion. Please try again.');
