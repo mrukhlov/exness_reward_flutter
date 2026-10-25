@@ -162,14 +162,14 @@ GoRouter _createRouter(BuildContext context) {
             path: '/profile',
             builder: (context, state) => const ProfileScreen(),
           ),
+          GoRoute(
+            path: '/venue/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return VenueDetailScreen(venueId: id);
+            },
+          ),
         ],
-      ),
-      GoRoute(
-        path: '/venue/:id',
-        builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return VenueDetailScreen(venueId: id);
-        },
       ),
       GoRoute(
         path: '/saved-places',
