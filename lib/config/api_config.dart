@@ -34,5 +34,6 @@ class ApiConfig {
   static const String venuesGrouped = '/venues/grouped';
   static const String favorites = '/users/favorites';
   static const String events = '/events';
+  static const String eventRequests = '/event-requests';
   static const String venueRequests = '/venue-requests';
 }

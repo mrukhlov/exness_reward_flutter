@@ -19,6 +19,7 @@ import 'screens/profile_screen.dart';
 import 'screens/venue_detail_screen.dart';
 import 'screens/saved_places_screen.dart';
 import 'screens/event_detail_screen.dart';
+import 'screens/suggest_event_screen.dart';
 import 'screens/suggest_place_screen.dart';
 
 GoRouter? _router;
@@ -177,6 +178,10 @@ GoRouter _createRouter(BuildContext context) {
       GoRoute(
         path: '/suggest-place',
         builder: (context, state) => const SuggestPlaceScreen(),
+      ),
+      GoRoute(
+        path: '/suggest-event',
+        builder: (context, state) => const SuggestEventScreen(),
       ),
       GoRoute(
         path: '/event/:id',

@@ -295,4 +295,32 @@ class ApiService {
     );
     return response.statusCode;
   }
+
+  // Event requests API
+  // Returns the HTTP status code: 201 = created, 409 = duplicate pending request
+  Future<int> createEventRequest({
+    required String title,
+    required String date,
+    required String startTime,
+    required String endTime,
+    required String location,
+    required String address,
+    String? description,
+  }) async {
+    final response = await _request(
+      ApiConfig.eventRequests,
+      method: 'POST',
+      throwOnError: false,
+      body: {
+        'title': title,
+        'date': date,
+        'start_time': startTime,
+        'end_time': endTime,
+        'location': location,
+        'address': address,
+        if (description != null) 'description': description,
+      },
+    );
+    return response.statusCode;
+  }
 }
