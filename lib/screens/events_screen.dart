@@ -107,7 +107,7 @@ class _EventsScreenState extends State<EventsScreen> {
       final matchesDate = event.date == dateStr;
       final matchesCategory =
           _selectedCategory == 'All' ||
-          event.type.toString().split('.').last == _selectedCategory;
+          event.type.name == _selectedCategory.toLowerCase();
       return matchesDate && matchesCategory;
     }).toList();
   }
@@ -124,7 +124,7 @@ class _EventsScreenState extends State<EventsScreen> {
       final matchesDate = event.date == dateStr;
       final matchesCategory =
           _selectedCategory == 'All' ||
-          event.type.toString().split('.').last == _selectedCategory;
+          event.type.name == _selectedCategory.toLowerCase();
       return matchesDate && matchesCategory;
     }).toList();
   }

@@ -28,18 +28,14 @@ class EventListItem extends StatelessWidget {
     'December',
   ];
 
-  Color _parseColor(String colorString) {
-    try {
-      return Color(int.parse(colorString.replaceFirst('#', '0xFF')));
-    } catch (e) {
-      return const Color(0xFF3B82F6);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final eventDate = DateTime.parse(event.date);
+    // Badge color follows the event type, like the filter dots
+    final badgeColor = event.type == EventType.corporate
+        ? const Color(0xFF3B82F6)
+        : const Color(0xFF22C55E);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -103,15 +99,15 @@ class EventListItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Event Type Badge
+                    // Event Type Badge (color follows type, like the filter dots)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: _parseColor(event.color).withOpacity(0.1),
-                        border: Border.all(color: _parseColor(event.color)),
+                        color: badgeColor.withOpacity(0.1),
+                        border: Border.all(color: badgeColor),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -119,7 +115,7 @@ class EventListItem extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: _parseColor(event.color),
+                          color: badgeColor,
                           letterSpacing: 0.5,
                         ),
                       ),
