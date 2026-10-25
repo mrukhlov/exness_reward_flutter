@@ -272,14 +272,15 @@ class ApiService {
   }
 
   // Venue requests API
-  Future<void> createVenueRequest({
+  // Returns the HTTP status code: 201 = created, 200 = duplicate pending request
+  Future<int> createVenueRequest({
     required String name,
     String? categoryId,
     required String locationName,
     required String address,
     String? comment,
   }) async {
-    await _request(
+    final response = await _request(
       ApiConfig.venueRequests,
       method: 'POST',
       body: {
@@ -290,5 +291,6 @@ class ApiService {
         if (comment != null) 'comment': comment,
       },
     );
+    return response.statusCode;
   }
 }

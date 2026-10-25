@@ -59,7 +59,7 @@ class _SuggestPlaceScreenState extends State<SuggestPlaceScreen> {
       _error = null;
     });
     try {
-      await _api.createVenueRequest(
+      final statusCode = await _api.createVenueRequest(
         name: _nameController.text.trim(),
         categoryId: _category?.id,
         locationName: _locationController.text.trim(),
@@ -68,7 +68,8 @@ class _SuggestPlaceScreenState extends State<SuggestPlaceScreen> {
             ? null
             : _commentController.text.trim(),
       );
-      if (mounted) {
+      if (!mounted) return;
+      if (statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Thanks! Our team will review your suggestion.'),
@@ -81,6 +82,10 @@ class _SuggestPlaceScreenState extends State<SuggestPlaceScreen> {
         } else {
           context.go('/profile');
         }
+      } else {
+        // 200 = duplicate pending request (deduped by name + address)
+        setState(() =>
+            _error = 'This place has already been suggested and is pending review.');
       }
     } catch (_) {
       setState(() => _error = 'Failed to send suggestion. Please try again.');
