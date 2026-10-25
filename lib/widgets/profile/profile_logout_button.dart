@@ -12,6 +12,8 @@ class ProfileLogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Red accent — logout is destructive, and yellow reads poorly on gray
+    final accent = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -31,14 +33,14 @@ class ProfileLogoutButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.logout, size: 20, color: Color(0xFFFFD00B)),
+            Icon(Icons.logout, size: 20, color: accent),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Log Out',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFFFFD00B),
+                color: accent,
               ),
             ),
           ],

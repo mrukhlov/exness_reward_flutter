@@ -250,9 +250,7 @@ class CalendarView extends StatelessWidget {
                                           horizontal: 1,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? Colors.black
-                                              : _parseColor(color),
+                                          color: _parseColor(color),
                                           shape: BoxShape.circle,
                                         ),
                                       );

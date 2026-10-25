@@ -115,7 +115,10 @@ class _EventsScreenState extends State<EventsScreen> {
   List<String> _getEventColorsForDate(DateTime date, List<Event> events) {
     final dateEvents = _getEventsForDate(date, events);
     if (dateEvents.isEmpty) return [];
-    return dateEvents.map((e) => e.color).toList();
+    // Dot color follows the event type, like the badges (blue Corporate, green Community)
+    return dateEvents
+        .map((e) => e.type == EventType.corporate ? '#3B82F6' : '#22C55E')
+        .toList();
   }
 
   List<Event> _getFilteredEventsList(List<Event> events) {
