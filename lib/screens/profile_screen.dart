@@ -99,14 +99,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 isLast: false,
                                 isDark: isDark,
                               ),
-                              ProfileMenuItem(
-                                icon: Icons.person_add,
-                                title: 'Invite Spouse',
-                                subtitle: 'Send invitation to your spouse',
-                                onTap: () => context.go('/invite'),
-                                isLast: false,
-                                isDark: isDark,
-                              ),
+                              if (user?.role != 'Spouse')
+                                ProfileMenuItem(
+                                  icon: Icons.person_add,
+                                  title: 'Invite Spouse',
+                                  subtitle: 'Send invitation to your spouse',
+                                  onTap: () => context.go('/invite'),
+                                  isLast: false,
+                                  isDark: isDark,
+                                ),
                               ProfileMenuItem(
                                 icon: Icons.add_business,
                                 title: 'Suggest a Place',
