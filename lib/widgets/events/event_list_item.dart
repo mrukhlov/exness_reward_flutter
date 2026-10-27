@@ -100,56 +100,60 @@ class EventListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Event Type Badge (color follows type, like the filter dots)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withOpacity(0.1),
-                        border: Border.all(color: badgeColor),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        event.type.toString().split('.').last.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: badgeColor,
-                          letterSpacing: 0.5,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withOpacity(0.1),
+                            border: Border.all(color: badgeColor),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            event.type.toString().split('.').last.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: badgeColor,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
-                      ),
+                        if (event.type == EventType.corporate &&
+                            event.audience == EventAudience.plusOne)
+                          const SizedBox(width: 6),
+                        if (event.type == EventType.corporate &&
+                            event.audience == EventAudience.plusOne)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: (isDark ? Colors.white : Colors.black)
+                                  .withOpacity(0.05),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.3)
+                                    : Colors.grey.shade400,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '+1',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? Colors.white : Colors.black,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    if (event.type == EventType.corporate &&
-                        event.audience == EventAudience.plusOne)
-                      const SizedBox(width: 6),
-                    if (event.type == EventType.corporate &&
-                        event.audience == EventAudience.plusOne)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: (isDark ? Colors.white : Colors.black)
-                              .withOpacity(0.05),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.3)
-                                : Colors.grey.shade400,
-                          ),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '+1',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white : Colors.black,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
                     const SizedBox(height: 8),
                     // Event Title
                     Text(
