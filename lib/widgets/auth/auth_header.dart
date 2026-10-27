@@ -13,12 +13,6 @@ class AuthHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.change_history,
-          size: logoSize,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(width: 8),
         Text(
           'exness',
           style: TextStyle(

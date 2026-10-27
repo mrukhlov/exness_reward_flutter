@@ -30,7 +30,6 @@ class WelcomeScreen extends StatelessWidget {
 
     // Adaptive font sizes
     final logoSize = isSmallScreen ? 24.0 : 28.0;
-    final iconSize = isSmallScreen ? 28.0 : 32.0;
     final titleSize = isSmallScreen ? 22.0 : 26.0;
     final subtitleSize = isSmallScreen ? 12.0 : 14.0;
     final buttonTextSize = isSmallScreen ? 14.0 : 16.0;
@@ -50,7 +49,7 @@ class WelcomeScreen extends StatelessWidget {
             // Account for: top spacing, logo, section spacing, text content, buttons, bottom padding
             final estimatedOtherContentHeight =
                 topSpacing +
-                iconSize +
+                logoSize +
                 sectionSpacing * 2 +
                 titleSize * 1.3 +
                 subtitleSize * 2.5 +
@@ -91,7 +90,6 @@ class WelcomeScreen extends StatelessWidget {
                         SizedBox(height: topSpacing),
                         // Header Logo
                         WelcomeHeader(
-                          iconSize: iconSize,
                           logoSize: logoSize,
                           isDark: isDark,
                         ),

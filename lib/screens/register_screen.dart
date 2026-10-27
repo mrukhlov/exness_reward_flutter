@@ -87,16 +87,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 48),
-                    // Logo and brand name
+                    // Brand name
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.change_history,
-                          size: 36,
-                          color: yellowColor,
-                        ),
-                        const SizedBox(width: 8),
                         const Text(
                           'exness',
                           style: TextStyle(
